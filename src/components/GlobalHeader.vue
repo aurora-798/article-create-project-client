@@ -111,7 +111,7 @@ const menuItems = computed(() => {
 // 退出登录
 const doLogout = async () => {
   const res = await userLogout()
-  if (res.data.code === 0) {
+  if (res.data.code === 200) {
     loginUserStore.setLoginUser({
       userName: '未登录',
     })

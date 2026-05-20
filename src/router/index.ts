@@ -3,6 +3,7 @@ import UserRegisterPage from "@/pages/user/UserRegisterPage.vue";
 import UserLoginPage from "@/pages/user/UserLoginPage.vue";
 import HomePage from "@/pages/HomePage.vue";
 
+// @ts-ignore
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -41,6 +42,12 @@ const router = createRouter({
       name: '用户管理',
       component: () => import('@/pages/admin/UserManagePage.vue'),
     },
+    {
+      path: '/vip',
+      name: '会员购买',
+      component: () => import('@/pages/VipPage.vue'),
+    },
+
   ],
 })
 

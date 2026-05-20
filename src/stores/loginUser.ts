@@ -15,7 +15,7 @@ export const useLoginUserStore = defineStore('loginUser', () => {
     // 获取登录用户信息
     async function fetchLoginUser() {
         const res = await getLoginUser()
-        if (res.data.code === 0 && res.data.data) {
+        if (res.data.code === 200 && res.data.data) {
             loginUser.value = res.data.data
         }
     }

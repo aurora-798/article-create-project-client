@@ -32,7 +32,6 @@
           </a-button>
         </div>
 
-
         <div class="section-points">
           <div v-for="(point, pointIdx) in section.points" :key="pointIdx" class="point-item">
             <span class="point-bullet">•</span>
@@ -50,7 +49,6 @@
               ×
             </a-button>
           </div>
-
           <a-button
               type="dashed"
               @click="addPoint(index)"
@@ -65,13 +63,16 @@
       </div>
     </div>
 
-    <div class="ai-chat-section">
+    <div class="ai-chat-section" :class="{ 'vip-only': !isVip }">
       <div class="chat-header">
         <RobotOutlined />
         <span>AI 助手修改大纲</span>
+        <span v-if="!isVip" class="vip-badge-small">
+          <CrownOutlined />
+          VIP
+        </span>
       </div>
-
-      <div class="chat-input-wrapper">
+      <div v-if="isVip" class="chat-input-wrapper">
         <a-textarea
             v-model:value="modifySuggestion"
             placeholder="告诉 AI 如何修改大纲，例如：请在第二章节后增加一个关于实践案例的章节"
@@ -92,6 +93,13 @@
           </template>
           AI 修改大纲
         </a-button>
+      </div>
+      <div v-else class="vip-upgrade-notice">
+        <CrownOutlined class="vip-icon" />
+        <p>AI 修改大纲功能仅限 VIP 会员使用</p>
+        <RouterLink to="/vip" class="upgrade-btn">
+          立即升级 VIP
+        </RouterLink>
       </div>
     </div>
 
@@ -125,11 +133,13 @@
 </template>
 
 <script setup lang="ts">
-
-import {computed, nextTick, onMounted, ref} from "vue";
-import Sortable from "sortablejs";
-import {message} from "ant-design-vue";
-import {aiModifyOutline} from "@/api/articleController.ts";
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { CheckOutlined, DeleteOutlined, PlusOutlined, RobotOutlined, CrownOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import Sortable from 'sortablejs'
+import { aiModifyOutline } from '@/api/articleController'
+import { useLoginUserStore } from '@/stores/loginUser'
+import { isVip as checkIsVip } from '@/utils/permission'
 
 interface OutlineSection {
   section: number
@@ -152,6 +162,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+const loginUserStore = useLoginUserStore()
+
+// 判断是否为 VIP（管理员也视为 VIP）
+const isVip = computed(() => checkIsVip(loginUserStore.loginUser))
 
 // 转换 API 类型为内部类型
 const outlineSections = ref<OutlineSection[]>(
@@ -258,3 +273,270 @@ const handleAiModify = async () => {
   }
 }
 </script>
+
+<style scoped lang="scss">
+.outline-editing-stage {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.stage-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.stage-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+
+.stage-subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.outline-section {
+  background: var(--color-background-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.drag-handle {
+  cursor: grab;
+  font-size: 20px;
+  color: var(--color-text-muted);
+  user-select: none;
+  line-height: 1;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.section-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.section-title-input {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+}
+
+.section-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 44px;
+}
+
+.point-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.point-bullet {
+  color: var(--color-primary);
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.point-input {
+  flex: 1;
+  font-size: 14px;
+}
+
+.delete-point-btn {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #ff4d4f;
+  }
+}
+
+.add-point-btn {
+  align-self: flex-start;
+}
+
+.ai-chat-section {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 32px;
+
+  &.vip-only {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(22, 163, 74, 0.02) 100%);
+    border-color: var(--color-primary);
+  }
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+
+  .anticon {
+    font-size: 18px;
+  }
+
+  .vip-badge-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    color: white;
+    margin-left: auto;
+  }
+}
+
+.vip-upgrade-notice {
+  text-align: center;
+  padding: 20px;
+
+  .vip-icon {
+    font-size: 48px;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0 0 16px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+
+  .upgrade-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--gradient-primary);
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: var(--shadow-green);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+      color: white;
+    }
+  }
+}
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chat-textarea {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ai-modify-btn {
+  height: 40px;
+  padding: 0 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.add-section-btn,
+.confirm-btn {
+  height: 48px;
+  padding: 0 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+}
+
+.confirm-btn {
+  background: var(--gradient-primary) !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4) !important;
+  }
+
+  &:disabled {
+    background: var(--color-border) !important;
+    box-shadow: none !important;
+    opacity: 0.6;
+  }
+}
+</style>
