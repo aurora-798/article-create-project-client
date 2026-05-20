@@ -60,7 +60,7 @@ import {
   HomeOutlined,
   EditOutlined,
   UnorderedListOutlined,
-  SettingOutlined
+  SettingOutlined, BarChartOutlined
 } from '@ant-design/icons-vue'
 
 const loginUserStore = useLoginUserStore()
@@ -93,6 +93,12 @@ const originItems = [
     key: '/admin/userManage',
     icon: SettingOutlined,
     label: '管理',
+    admin: true,
+  },
+  {
+    key: '/admin/statistics',
+    icon: BarChartOutlined,
+    label: '运营数据',
     admin: true,
   },
 ]

@@ -47,7 +47,11 @@ const router = createRouter({
       name: '会员购买',
       component: () => import('@/pages/VipPage.vue'),
     },
-
+    {
+      path: '/admin/statistics',
+      name: '数据分析',
+      component: () => import('@/pages/admin/StatisticsPage.vue'),
+    },
   ],
 })
 
