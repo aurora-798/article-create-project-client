@@ -21,7 +21,7 @@
         <!-- 核心指标卡片 -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon" style="background: rgba(34, 197, 94, 0.1)">
+            <div class="stat-icon" style="background: rgba(180, 83, 9, 0.1)">
               <FileTextOutlined style="color: var(--color-primary)" />
             </div>
             <div class="stat-content">
@@ -221,7 +221,7 @@ const renderTrendChart = () => {
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: '#4ADE80' },
-            { offset: 1, color: '#22C55E' }
+            { offset: 1, color: '#b45309' }
           ]),
           borderRadius: [4, 4, 0, 0]
         },
@@ -279,7 +279,7 @@ const renderUserChart = () => {
           {
             value: stats.value.vipUserCount ?? 0,
             name: 'VIP 会员',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#b45309' }
           },
           {
             value: stats.value.activeUserCount ?? 0,
@@ -330,7 +330,7 @@ const renderQuotaChart = () => {
           {
             value: remainingQuota,
             name: '剩余',
-            itemStyle: { color: '#22C55E' }
+            itemStyle: { color: '#b45309' }
           }
         ],
         emphasis: {
@@ -379,13 +379,14 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .statistics-page {
   background: var(--color-background-secondary);
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--header-height));
   padding-bottom: 60px;
 
   .page-header {
-    background: var(--gradient-hero);
-    padding: 32px 20px;
-    margin-bottom: 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 40px var(--page-padding) 36px;
+    margin-bottom: 28px;
   }
 
   .header-container {

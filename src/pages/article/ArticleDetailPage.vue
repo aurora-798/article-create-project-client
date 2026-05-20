@@ -41,9 +41,9 @@
             <h1 class="main-title">{{ article.mainTitle }}</h1>
             <p class="sub-title">{{ article.subTitle }}</p>
             <div class="meta-info">
-              <a-tag :color="getStatusColor(article.status ?? '')" class="status-tag">
+              <span :class="['moyu-status-badge', getStatusClass(article.status ?? '')]">
                 {{ getStatusText(article.status ?? '') }}
-              </a-tag>
+              </span>
               <span class="time">创建于 {{ article.createTime ? formatDate(article.createTime) : '' }}</span>
             </div>
           </div>
@@ -56,9 +56,9 @@
               <h2 class="section-title">
                 <ClockCircleOutlined class="section-icon" />
                 执行日志
-                <a-tag :color="getStatusColor(executionStats.overallStatus ?? '')" class="status-tag-small">
+                <span :class="['moyu-status-badge', 'status-tag-small', getStatusClass(executionStats.overallStatus ?? '')]">
                   {{ executionStats.overallStatus ?? '' }}
-                </a-tag>
+                </span>
               </h2>
               <ThunderboltOutlined :class="['toggle-icon', { expanded: showExecutionLogs }]" />
             </div>
@@ -292,15 +292,18 @@ const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
 }
 
-// 获取状态颜色
-const getStatusColor = (status: string) => {
-  const colorMap: Record<string, string> = {
-    PENDING: 'default',
-    PROCESSING: 'processing',
-    COMPLETED: 'success',
-    FAILED: 'error',
+// 获取状态样式
+const getStatusClass = (status: string) => {
+  const classMap: Record<string, string> = {
+    PENDING: 'moyu-status-pending',
+    PROCESSING: 'moyu-status-processing',
+    COMPLETED: 'moyu-status-completed',
+    FAILED: 'moyu-status-failed',
+    SUCCESS: 'moyu-status-success',
+    RUNNING: 'moyu-status-running',
+    ERROR: 'moyu-status-error',
   }
-  return colorMap[status] || 'default'
+  return classMap[status] || 'moyu-status-default'
 }
 
 // 获取状态文本
@@ -360,13 +363,14 @@ onMounted(() => {
   padding-bottom: 60px;
 
   .page-header {
-    background: var(--gradient-hero);
-    padding: 20px;
-    margin-bottom: 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 20px var(--page-padding);
+    margin-bottom: 28px;
   }
 
   .header-container {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
   }
 
@@ -419,7 +423,7 @@ onMounted(() => {
     font-size: 13px;
     transition: all var(--transition-fast);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-green);
+    box-shadow: var(--shadow-md);
 
     &:hover {
       opacity: 0.9;
@@ -428,16 +432,16 @@ onMounted(() => {
   }
 
   .container {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 var(--page-padding);
   }
 
   .article-card {
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-    background: white;
+    box-shadow: var(--shadow-lg);
+    background: var(--color-surface);
 
     :deep(.ant-card-body) {
       padding: 40px;
@@ -472,10 +476,8 @@ onMounted(() => {
       font-size: 13px;
     }
 
-    .status-tag {
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      padding: 2px 12px;
+    .moyu-status-badge {
+      min-height: 26px;
     }
   }
 
@@ -496,7 +498,8 @@ onMounted(() => {
 
   .status-tag-small {
     font-size: 11px;
-    padding: 2px 8px;
+    min-height: 24px;
+    padding: 3px 9px;
     margin-left: 8px;
   }
 

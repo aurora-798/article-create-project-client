@@ -409,14 +409,14 @@ const handleAiModify = async () => {
 }
 
 .ai-chat-section {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  background: linear-gradient(135deg, rgba(28, 25, 23, 0.05) 0%, rgba(28, 25, 23, 0.02) 100%);
   border: 2px dashed var(--color-primary);
   border-radius: var(--radius-lg);
   padding: 24px;
   margin-bottom: 32px;
 
   &.vip-only {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(22, 163, 74, 0.02) 100%);
+    background: linear-gradient(135deg, rgba(28, 25, 23, 0.05) 0%, rgba(87, 83, 78, 0.02) 100%);
     border-color: var(--color-primary);
   }
 }
@@ -476,11 +476,11 @@ const handleAiModify = async () => {
     color: white;
     text-decoration: none;
     transition: all 0.3s;
-    box-shadow: var(--shadow-green);
+    box-shadow: var(--shadow-md);
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+      box-shadow: 0 6px 20px rgba(28, 25, 23, 0.35);
       color: white;
     }
   }
@@ -525,12 +525,12 @@ const handleAiModify = async () => {
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.3) !important;
 
   &:hover:not(:disabled) {
     opacity: 0.92;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4) !important;
+    box-shadow: 0 6px 20px rgba(28, 25, 23, 0.4) !important;
   }
 
   &:disabled {

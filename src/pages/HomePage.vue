@@ -5,23 +5,19 @@ import { useLoginUserStore } from '@/stores/loginUser'
 import { listArticle } from '@/api/articleController'
 import dayjs from 'dayjs'
 import {
-  RocketOutlined,
+  ArrowRightOutlined,
   FileTextOutlined,
   OrderedListOutlined,
   EditOutlined,
   PictureOutlined,
   ThunderboltOutlined,
   ClockCircleOutlined,
-  RightOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 
-// 输入框
 const topic = ref('')
-
-// 最近文章
 const recentArticles = ref<API.ArticleVO[]>([])
 const loadingArticles = ref(false)
 
@@ -41,7 +37,6 @@ const viewArticle = (article: API.ArticleVO) => {
   router.push(`/article/${article.taskId}`)
 }
 
-// 加载最近文章
 const loadRecentArticles = async () => {
   if (!loginUserStore.loginUser.id) return
 
@@ -56,49 +51,41 @@ const loadRecentArticles = async () => {
   }
 }
 
-// 格式化时间
 const formatTime = (time: string) => {
   return dayjs(time).format('MM-DD HH:mm')
 }
 
-// 功能卡片数据
 const features = [
   {
     icon: FileTextOutlined,
-    title: '智能生成标题',
-    description: 'AI 自动分析选题，生成吸引眼球的爆款标题',
-    color: '#22C55E'
+    title: '智能标题',
+    description: '分析选题意图，生成多组吸睛标题供你选择',
   },
   {
     icon: OrderedListOutlined,
-    title: '自动生成大纲',
-    description: '智能规划文章结构，确保逻辑清晰完整',
-    color: '#3B82F6'
+    title: '结构大纲',
+    description: '自动规划章节脉络，逻辑清晰、层次分明',
   },
   {
     icon: EditOutlined,
-    title: '流式生成正文',
-    description: '实时展示创作过程，体验打字机般的流畅输出',
-    color: '#8B5CF6'
+    title: '流式正文',
+    description: '实时呈现创作过程，所见即所得的流畅体验',
   },
   {
     icon: PictureOutlined,
     title: '智能配图',
-    description: '自动检索高质量无版权图片，完美匹配内容',
-    color: '#F59E0B'
+    description: '自动匹配高质量图片，图文一体完美呈现',
   },
   {
     icon: ThunderboltOutlined,
-    title: '快速高效',
-    description: '5-10分钟完成全文创作，效率提升10倍',
-    color: '#EF4444'
+    title: '高效产出',
+    description: '数分钟完成万字长文，效率提升十倍',
   },
   {
     icon: ClockCircleOutlined,
-    title: '历史管理',
-    description: '随时查看和管理所有创作记录，支持导出',
-    color: '#06B6D4'
-  }
+    title: '创作归档',
+    description: '历史记录随时查阅，支持导出与管理',
+  },
 ]
 
 onMounted(() => {
@@ -107,418 +94,433 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="homePage">
-    <!-- Hero Section -->
-    <div class="hero-section">
-      <div class="hero-bg"></div>
-      <div class="container">
-        <div class="hero-badge">
-          <ThunderboltOutlined />
-          <span>AI 驱动的内容创作平台</span>
-        </div>
-        <h1 class="hero-title">AI 爆款文章创作器</h1>
-        <p class="hero-subtitle">让每个人都能写出 10万+ 文章</p>
+  <div class="home-page">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">墨语 · AI 写作</p>
+          <h1 class="hero-title">
+            落笔成章<br />
+            <em>让好文章自然发生</em>
+          </h1>
+          <p class="hero-desc">
+            从选题到成稿，墨语以多智能体协作完成标题、大纲、正文与配图，为你节省大量写作时间。
+          </p>
 
-        <!-- 核心输入框 -->
-        <div class="input-wrapper">
-          <a-input
+          <div class="compose-box">
+            <a-input
               v-model:value="topic"
-              placeholder="输入您想创作的文章选题，例如：2026年AI如何改变职场"
+              placeholder="输入选题，例如：2026 年 AI 如何重塑职场竞争力"
               size="large"
-              class="topic-input"
-              @pressEnter="goToCreate"
-          >
-            <template #prefix>
-              <EditOutlined class="input-icon" />
-            </template>
-          </a-input>
-          <a-button type="primary" size="large" @click="goToCreate" class="cta-btn">
-            <RocketOutlined />
-            开始创作
-          </a-button>
+              class="topic-field"
+              @press-enter="goToCreate"
+            />
+            <a-button type="primary" size="large" class="start-btn" @click="goToCreate">
+              开始创作
+              <ArrowRightOutlined />
+            </a-button>
+          </div>
+          <p class="hero-hint">工作总结 · 演讲稿 · 分析报告 · 心得体会</p>
         </div>
 
-        <p class="hero-tips">工作总结、心得体会、演讲稿、分析报告... 一键生成</p>
-      </div>
-    </div>
-
-    <!-- Features Section -->
-    <div class="features-section">
-      <div class="container">
-        <div class="section-header">
-          <div class="section-badge">核心能力</div>
-          <h2 class="section-title">专业人士的一站式AI写作工具</h2>
-          <p class="section-subtitle">强大的 AI 能力，让创作变得简单高效</p>
-        </div>
-        <div class="features-grid">
-          <div
-              v-for="(feature, index) in features"
-              :key="index"
-              class="feature-card"
-          >
-            <div class="feature-icon-wrapper" :style="{ background: `${feature.color}15` }">
-              <component :is="feature.icon" class="feature-icon" :style="{ color: feature.color }" />
-            </div>
-            <div class="feature-content">
-              <h3 class="feature-title">{{ feature.title }}</h3>
-              <p class="feature-description">{{ feature.description }}</p>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="visual-card card-1">
+            <span class="card-label">标题生成</span>
+            <p class="card-text">「AI 时代，普通人如何破局？」</p>
+          </div>
+          <div class="visual-card card-2">
+            <span class="card-label">大纲结构</span>
+            <ul>
+              <li>一、时代背景</li>
+              <li>二、核心能力</li>
+              <li>三、行动指南</li>
+            </ul>
+          </div>
+          <div class="visual-card card-3">
+            <span class="card-label">正文流式</span>
+            <div class="typing-lines">
+              <span></span><span></span><span></span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Recent Articles Section -->
-    <div v-if="loginUserStore.loginUser.id && recentArticles.length > 0" class="articles-section">
-      <div class="container">
-        <div class="section-header-row">
+    <section class="features">
+      <div class="section-inner">
+        <header class="section-head">
+          <h2>核心能力</h2>
+          <p>一站式 AI 写作工作流，覆盖创作全流程</p>
+        </header>
+        <div class="feature-grid">
+          <article v-for="(feature, index) in features" :key="index" class="feature-item">
+            <div class="feature-icon">
+              <component :is="feature.icon" />
+            </div>
+            <h3>{{ feature.title }}</h3>
+            <p>{{ feature.description }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section
+      v-if="loginUserStore.loginUser.id && recentArticles.length > 0"
+      class="recent"
+    >
+      <div class="section-inner">
+        <header class="recent-head">
           <div>
-            <h2 class="section-title-sm">最近创作</h2>
-            <p class="section-subtitle-sm">查看您最近创作的文章</p>
+            <h2>最近创作</h2>
+            <p>继续你未完成的灵感</p>
           </div>
-          <a-button type="link" @click="goToList" class="view-all-btn">
+          <a-button type="link" class="view-all" @click="goToList">
             查看全部
-            <RightOutlined />
+            <ArrowRightOutlined />
           </a-button>
-        </div>
+        </header>
 
         <a-spin :spinning="loadingArticles">
-          <div class="articles-grid">
-            <div
-                v-for="article in recentArticles"
-                :key="article.id"
-                class="article-card"
-                @click="viewArticle(article)"
+          <div class="article-grid">
+            <article
+              v-for="article in recentArticles"
+              :key="article.id"
+              class="article-item"
+              @click="viewArticle(article)"
             >
               <div class="article-cover">
                 <img
-                    v-if="article.coverImage"
-                    :src="article.coverImage"
-                    :alt="article.mainTitle"
+                  v-if="article.coverImage"
+                  :src="article.coverImage"
+                  :alt="article.mainTitle"
                 />
-                <div v-else class="cover-placeholder">
+                <div v-else class="cover-empty">
                   <FileTextOutlined />
                 </div>
               </div>
-              <div class="article-info">
-                <h4 class="article-title">{{ article.mainTitle || article.topic }}</h4>
+              <div class="article-body">
+                <h4>{{ article.mainTitle || article.topic }}</h4>
                 <div class="article-meta">
-                  <span class="article-time">
+                  <time>
                     <ClockCircleOutlined />
-                    {{ formatTime(article.createTime) }}
-                  </span>
-                  <span :class="['article-status', `status-${article.status?.toLowerCase()}`]">
-                    {{ article.status === 'COMPLETED' ? '已完成' : article.status === 'PROCESSING' ? '生成中' : '等待中' }}
+                    {{ article.createTime ? formatTime(article.createTime) : '' }}
+                  </time>
+                  <span
+                    :class="['moyu-status-badge', `moyu-status-${article.status?.toLowerCase()}`]"
+                  >
+                    {{
+                      article.status === 'COMPLETED'
+                        ? '已完成'
+                        : article.status === 'PROCESSING'
+                          ? '生成中'
+                          : '等待中'
+                    }}
                   </span>
                 </div>
               </div>
-            </div>
+            </article>
           </div>
         </a-spin>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-#homePage {
+.home-page {
   width: 100%;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  background: var(--color-background);
 }
 
-/* Hero Section */
-.hero-section {
-  position: relative;
-  padding: 80px 20px 100px;
-  text-align: center;
-  overflow: hidden;
+/* Hero */
+.hero {
+  padding: 56px var(--page-padding) 72px;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.hero-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--gradient-hero);
-  z-index: 0;
-}
-
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 900px;
+.hero-grid {
+  max-width: var(--content-max-width);
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background: var(--color-accent-muted);
   border-radius: var(--radius-full);
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
-  color: var(--color-primary-dark);
 }
 
 .hero-title {
-  font-size: 52px;
+  font-size: clamp(36px, 5vw, 52px);
   font-weight: 700;
-  margin: 0 0 16px;
-  letter-spacing: -1.5px;
-  line-height: 1.1;
+  line-height: 1.15;
+  margin: 0 0 20px;
   color: var(--color-text);
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
-.hero-subtitle {
-  font-size: 20px;
-  margin: 0 0 40px;
+.hero-title em {
+  font-style: normal;
   color: var(--color-text-secondary);
-  font-weight: 400;
+  font-weight: 500;
 }
 
-/* 核心输入框 */
-.input-wrapper {
+.hero-desc {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+  margin: 0 0 32px;
+  max-width: 480px;
+}
+
+.compose-box {
   display: flex;
-  gap: 12px;
-  max-width: 700px;
-  margin: 0 auto 20px;
-  padding: 8px;
-  background: white;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  gap: 10px;
+  max-width: 520px;
+  padding: 6px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
 }
 
-.topic-input {
+.topic-field {
   flex: 1;
   border: none !important;
   box-shadow: none !important;
-  font-size: 16px;
-  padding: 8px 16px;
   background: transparent !important;
+  font-size: 15px;
 }
 
-.topic-input:focus {
-  box-shadow: none !important;
-}
-
-.input-icon {
-  color: var(--color-text-muted);
-  font-size: 18px;
-}
-
-.cta-btn {
-  height: 52px !important;
-  padding: 0 32px !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
+.start-btn {
+  height: 48px !important;
+  padding: 0 24px !important;
   border-radius: var(--radius-lg) !important;
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  display: flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;
-  transition: opacity var(--transition-normal) !important;
+  flex-shrink: 0;
 }
 
-.cta-btn:hover,
-.cta-btn:focus,
-.cta-btn:active {
-  background: var(--gradient-primary) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: var(--shadow-green) !important;
-  opacity: 0.92;
-}
-
-.cta-btn :deep(.ant-wave) {
-  display: none;
-}
-
-.hero-tips {
-  font-size: 14px;
+.hero-hint {
+  margin: 14px 0 0;
+  font-size: 13px;
   color: var(--color-text-muted);
-  margin: 0;
 }
 
-/* Features Section */
-.features-section {
-  padding: 80px 20px;
+/* Hero visual */
+.hero-visual {
+  position: relative;
+  min-height: 360px;
+}
+
+.visual-card {
+  position: absolute;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-lg);
+}
+
+.card-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 10px;
+}
+
+.card-text {
+  margin: 0;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.card-1 {
+  top: 0;
+  left: 0;
+  width: 72%;
+  z-index: 3;
+}
+
+.card-2 {
+  top: 120px;
+  right: 0;
+  width: 65%;
+  z-index: 2;
+}
+
+.card-2 ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+.card-3 {
+  bottom: 0;
+  left: 15%;
+  width: 70%;
+  z-index: 1;
+}
+
+.typing-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.typing-lines span {
+  display: block;
+  height: 8px;
+  background: var(--color-background-tertiary);
+  border-radius: 4px;
+}
+
+.typing-lines span:nth-child(1) { width: 100%; }
+.typing-lines span:nth-child(2) { width: 85%; }
+.typing-lines span:nth-child(3) { width: 60%; }
+
+/* Features */
+.features {
+  padding: 72px var(--page-padding);
   background: var(--color-background-secondary);
 }
 
-.features-section .container {
-  max-width: 1100px;
+.section-inner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 48px;
+.section-head {
+  margin-bottom: 40px;
 }
 
-.section-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  background: rgba(34, 197, 94, 0.1);
-  border-radius: var(--radius-full);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  margin-bottom: 16px;
+.section-head h2 {
+  font-size: 28px;
+  margin: 0 0 8px;
 }
 
-.section-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  color: var(--color-text);
-  letter-spacing: -0.5px;
-}
-
-.section-subtitle {
-  font-size: 16px;
-  color: var(--color-text-secondary);
+.section-head p {
   margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
 }
 
-.features-grid {
+.feature-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.feature-card {
-  background: white;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  padding: 24px;
-  display: flex;
   gap: 16px;
-  align-items: flex-start;
-  transition: all var(--transition-normal);
-  cursor: pointer;
 }
 
-.feature-card:hover {
-  border-color: var(--color-primary-light);
+.feature-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  transition: all var(--transition-normal);
+  cursor: default;
+}
+
+.feature-item:hover {
+  border-color: var(--color-text-muted);
   box-shadow: var(--shadow-card-hover);
   transform: translateY(-2px);
 }
 
-.feature-icon-wrapper {
-  width: 48px;
-  height: 48px;
+.feature-icon {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--color-background-tertiary);
   border-radius: var(--radius-md);
-  flex-shrink: 0;
-}
-
-.feature-icon {
-  font-size: 22px;
-}
-
-.feature-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.feature-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 6px;
+  font-size: 20px;
   color: var(--color-text);
+  margin-bottom: 16px;
 }
 
-.feature-description {
+.feature-item h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.feature-item p {
+  margin: 0;
   font-size: 14px;
   color: var(--color-text-secondary);
-  margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* Articles Section */
-.articles-section {
-  padding: 60px 20px 80px;
-  background: var(--color-background);
+/* Recent */
+.recent {
+  padding: 64px var(--page-padding) 80px;
 }
 
-.articles-section .container {
-  max-width: 1100px;
-}
-
-.section-header-row {
+.recent-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
+  align-items: flex-end;
+  margin-bottom: 28px;
 }
 
-.section-title-sm {
+.recent-head h2 {
   font-size: 24px;
-  font-weight: 700;
   margin: 0 0 4px;
-  color: var(--color-text);
 }
 
-.section-subtitle-sm {
+.recent-head p {
+  margin: 0;
   font-size: 14px;
   color: var(--color-text-secondary);
-  margin: 0;
 }
 
-.view-all-btn {
-  display: flex;
+.view-all {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--color-primary);
+  color: var(--color-accent) !important;
   font-weight: 500;
   padding: 0;
 }
 
-.view-all-btn:hover {
-  color: var(--color-primary-dark);
-}
-
-.articles-grid {
+.article-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 16px;
 }
 
-.article-card {
-  background: white;
-  border-radius: var(--radius-lg);
+.article-item {
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: all var(--transition-normal);
   cursor: pointer;
+  transition: all var(--transition-normal);
 }
 
-.article-card:hover {
-  border-color: var(--color-primary-light);
+.article-item:hover {
   box-shadow: var(--shadow-card-hover);
-  transform: translateY(-2px);
+  border-color: var(--color-text-muted);
 }
 
 .article-cover {
-  height: 140px;
+  height: 130px;
   background: var(--color-background-tertiary);
   overflow: hidden;
 }
@@ -527,28 +529,28 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: saturate(0.9);
 }
 
-.cover-placeholder {
-  width: 100%;
+.cover-empty {
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 28px;
   color: var(--color-text-muted);
 }
 
-.article-info {
-  padding: 16px;
+.article-body {
+  padding: 16px 18px 18px;
 }
 
-.article-title {
+.article-body h4 {
+  font-family: 'Noto Serif SC', serif;
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 12px;
-  color: var(--color-text);
-  line-height: 1.4;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -561,7 +563,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.article-time {
+.article-meta time {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -569,78 +571,50 @@ onMounted(() => {
   color: var(--color-text-muted);
 }
 
-.article-status {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-}
-
-.article-status.status-completed {
-  background: rgba(34, 197, 94, 0.1);
-  color: var(--color-primary-dark);
-}
-
-.article-status.status-processing {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563EB;
-}
-
-.article-status.status-pending {
-  background: var(--color-background-tertiary);
-  color: var(--color-text-muted);
-}
-
-/* Responsive */
 @media (max-width: 992px) {
-  .features-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
 
-  .articles-grid {
+  .hero-visual {
+    min-height: 280px;
+  }
+
+  .feature-grid,
+  .article-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
-  .hero-section {
-    padding: 60px 20px 80px;
+@media (max-width: 640px) {
+  .hero {
+    padding: 40px 16px 56px;
   }
 
-  .hero-title {
-    font-size: 36px;
-  }
-
-  .hero-subtitle {
-    font-size: 16px;
-  }
-
-  .input-wrapper {
+  .compose-box {
     flex-direction: column;
-    padding: 12px;
+    border-radius: var(--radius-lg);
   }
 
-  .cta-btn {
+  .start-btn {
     width: 100%;
     justify-content: center;
   }
 
-  .features-grid {
+  .hero-visual {
+    display: none;
+  }
+
+  .feature-grid,
+  .article-grid {
     grid-template-columns: 1fr;
   }
 
-  .articles-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-title {
-    font-size: 24px;
-  }
-
-  .section-header-row {
+  .recent-head {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 12px;
   }
 }
 </style>

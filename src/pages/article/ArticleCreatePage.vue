@@ -1,12 +1,24 @@
 <template>
   <div class="article-create-page">
-    <!-- 三栏布局容器 -->
+    <section class="create-hero">
+      <div class="hero-copy">
+        <p class="hero-kicker">墨语创作台</p>
+        <h1>把一个想法，写成一篇完整文章</h1>
+        <p>从选题、标题、大纲、正文到配图，所有创作步骤都在同一张工作画布中完成。</p>
+      </div>
+      <div class="hero-status">
+        <span class="status-label">当前阶段</span>
+        <strong>{{ currentPhase === 'INPUT' ? '空闲中' : agentSteps[currentStep]?.title || '创作中' }}</strong>
+      </div>
+    </section>
+
+    <!-- 创作工作台 -->
     <div class="create-layout">
-      <!-- 左侧：智能体流程可视化 -->
+      <!-- 顶部：智能体流程可视化 -->
       <aside class="sidebar-left">
         <div class="sidebar-header">
-          <h3 class="sidebar-title">创作流程</h3>
-          <p class="sidebar-subtitle">智能体协作可视化</p>
+          <h3 class="sidebar-title">创作进度</h3>
+          <p class="sidebar-subtitle">多智能体协作路径</p>
         </div>
 
         <div class="flow-timeline">
@@ -14,20 +26,20 @@
               v-for="(step, index) in agentSteps"
               :key="index"
               :class="['flow-item', {
-              'active': currentStep === index,
-              'completed': currentStep > index,
-              'pending': currentStep < index
+              'active': isFlowActive(index),
+              'completed': isFlowCompleted(index),
+              'pending': isFlowPending(index)
             }]"
           >
             <div class="flow-indicator">
-              <LoadingOutlined v-if="currentStep === index && isCreating" class="spin-icon" />
-              <CheckCircleOutlined v-else-if="currentStep > index" />
+              <LoadingOutlined v-if="isFlowRunning(index)" class="spin-icon" />
+              <CheckCircleOutlined v-else-if="isFlowCompleted(index)" />
               <span v-else class="step-number">{{ index + 1 }}</span>
             </div>
             <div class="flow-content">
               <div class="flow-title">{{ step.title }}</div>
               <div class="flow-desc">{{ step.description }}</div>
-              <div v-if="currentStep === index && isCreating" class="flow-status">
+              <div v-if="isFlowRunning(index)" class="flow-status">
                 <span class="status-dot"></span>
                 执行中...
               </div>
@@ -37,7 +49,7 @@
 
       </aside>
 
-      <!-- 中间：主内容区 -->
+      <!-- 中央：创作画布 -->
       <main ref="mainContentRef" class="main-content">
         <!-- 阶段切换（带过渡动画） -->
         <Transition name="fade-slide" mode="out-in">
@@ -45,8 +57,8 @@
           <div v-if="currentPhase === 'INPUT'" key="input" class="input-state">
             <div class="input-card">
               <div class="input-header">
-                <h1 class="input-title">创作新文章</h1>
-                <p class="input-subtitle">输入选题，AI 帮你生成爆款文章</p>
+                <h1 class="input-title">开始创作</h1>
+                <p class="input-subtitle">输入选题，墨语将为你生成完整文章</p>
               </div>
 
               <div class="input-area">
@@ -227,7 +239,7 @@
                 <PictureOutlined />
                 <span>正在生成配图</span>
               </div>
-              <a-progress :percent="imageProgress" status="active" :stroke-color="{ from: '#22C55E', to: '#16A34A' }" />
+              <a-progress :percent="imageProgress" status="active" :stroke-color="{ from: '#1c1917', to: '#57534e' }" />
               <p class="progress-hint">{{ imageCount }}/{{ totalImages }} 张图片已完成</p>
             </div>
 
@@ -256,7 +268,7 @@
         </Transition>
       </main>
 
-      <!-- 右侧：辅助面板 -->
+      <!-- 右侧：灵感信息坞 -->
       <aside class="sidebar-right">
         <!-- 配额信息 -->
         <div v-if="currentPhase === 'INPUT'" class="panel-section quota-section">
@@ -281,7 +293,7 @@
             <a-progress
                 :percent="(quota / 5) * 100"
                 :show-info="false"
-                :stroke-color="quota <= 1 ? '#ff4d4f' : '#22C55E'"
+                :stroke-color="quota <= 1 ? '#ff4d4f' : '#1c1917'"
                 size="small"
                 class="quota-progress"
             />
@@ -608,10 +620,42 @@ const isCompleted = ref(false)
 const isStreaming = ref(false)
 const isOutlineStreaming = ref(false)
 const currentStep = ref(0)
+const flowStarted = ref(false)
 const taskId = ref('')
 const errorVisible = ref(false)
 const errorMessage = ref('')
 const confirmLoading = ref(false)
+
+const activeFlowIndex = computed(() => {
+  if (!flowStarted.value) {
+    return -1
+  }
+  if (currentPhase.value === 'COMPLETED') {
+    return agentSteps.length
+  }
+  return Math.min(currentStep.value, agentSteps.length - 1)
+})
+
+const isFlowActive = (index: number) => activeFlowIndex.value === index
+
+const isFlowCompleted = (index: number) => flowStarted.value && activeFlowIndex.value > index
+
+const isFlowPending = (index: number) => !flowStarted.value || activeFlowIndex.value < index
+
+const isFlowRunning = (index: number) => {
+  if (!isFlowActive(index)) {
+    return false
+  }
+
+  return (
+    isCreating.value ||
+    isStreaming.value ||
+    isOutlineStreaming.value ||
+    currentPhase.value === 'TITLE_GENERATING' ||
+    currentPhase.value === 'OUTLINE_GENERATING' ||
+    currentPhase.value === 'CONTENT_GENERATING'
+  )
+}
 
 // 实时日志
 interface RealtimeLog {
@@ -725,6 +769,7 @@ const startCreate = async () => {
   }
 
   isCreating.value = true
+  flowStarted.value = true
   currentStep.value = 0
   realtimeLogs.value = []
   addLog('开始创建文章任务...', 'info')
@@ -757,6 +802,7 @@ const startCreate = async () => {
     const err = error as Error
     message.error(err.message || '创建任务失败')
     isCreating.value = false
+    flowStarted.value = false
   }
 }
 
@@ -787,13 +833,14 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'AGENT1_COMPLETE':
       // 智能体1完成，进入标题生成阶段（显示加载）
       currentPhase.value = 'TITLE_GENERATING'
-      currentStep.value = 1
+      currentStep.value = 0
       addLog('智能体1：标题方案生成完成', 'success')
       break
 
     case 'TITLES_GENERATED':
       // 标题方案生成完成，切换到选择标题阶段
       currentPhase.value = 'TITLE_SELECTING'
+      currentStep.value = 1
       titleOptions.value = msg.titleOptions || []
       isCreating.value = false
       addLog(`生成了 ${msg.titleOptions?.length || 0} 个标题方案`, 'success')
@@ -802,6 +849,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'AGENT2_STREAMING':
       // 大纲流式输出（显示生成中状态）
       currentPhase.value = 'OUTLINE_GENERATING'
+      currentStep.value = 1
       isOutlineStreaming.value = true
       outlineRaw.value += msg.content || ''
       scrollToBottom()
@@ -810,6 +858,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
     case 'OUTLINE_GENERATED':
       // 大纲生成完成，切换到编辑大纲阶段
       currentPhase.value = 'OUTLINE_EDITING'
+      currentStep.value = 2
       outline.value = msg.outline || []
       isCreating.value = false
       isOutlineStreaming.value = false
@@ -870,6 +919,9 @@ const handleSSEMessage = (msg: SSEMessage) => {
       // 全部完成
       currentPhase.value = 'COMPLETED'
       currentStep.value = 6
+      isCreating.value = false
+      isStreaming.value = false
+      isOutlineStreaming.value = false
       isCompleted.value = true
       message.success('文章创作完成!')
       addLog('✨ 文章创作完成！', 'success')
@@ -879,6 +931,7 @@ const handleSSEMessage = (msg: SSEMessage) => {
       errorMessage.value = msg.message || '创作失败'
       errorVisible.value = true
       isCreating.value = false
+      flowStarted.value = false
       currentPhase.value = 'INPUT'
       addLog(`创作失败: ${msg.message || '未知错误'}`, 'error')
       break
@@ -888,6 +941,8 @@ const handleSSEMessage = (msg: SSEMessage) => {
 // 确认标题
 const handleConfirmTitle = async (data: {mainTitle: string, subTitle: string, userDescription: string}) => {
   confirmLoading.value = true
+  isCreating.value = true
+  currentStep.value = 1
   try {
     await confirmTitle({
       taskId: taskId.value,
@@ -903,6 +958,7 @@ const handleConfirmTitle = async (data: {mainTitle: string, subTitle: string, us
   } catch (error) {
     const err = error as Error
     message.error(err.message || '确认标题失败')
+    isCreating.value = false
   } finally {
     confirmLoading.value = false
   }
@@ -911,6 +967,8 @@ const handleConfirmTitle = async (data: {mainTitle: string, subTitle: string, us
 // 确认大纲
 const handleConfirmOutline = async (outlineData: Array<{section: number, title: string, points: string[]}>) => {
   confirmLoading.value = true
+  isCreating.value = true
+  currentStep.value = 2
   try {
     await confirmOutline({
       taskId: taskId.value,
@@ -923,6 +981,7 @@ const handleConfirmOutline = async (outlineData: Array<{section: number, title: 
   } catch (error) {
     const err = error as Error
     message.error(err.message || '确认大纲失败')
+    isCreating.value = false
   } finally {
     confirmLoading.value = false
   }
@@ -968,6 +1027,7 @@ const resetCreate = () => {
   isStreaming.value = false
   isOutlineStreaming.value = false
   currentStep.value = 0
+  flowStarted.value = false
   imageCount.value = 0
   imageProgress.value = 0
   outlineRaw.value = ''
@@ -997,31 +1057,129 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .article-create-page {
-  height: calc(100vh - 64px);
-  background: var(--color-background-secondary);
+  min-height: calc(100vh - var(--header-height));
+  background:
+    radial-gradient(circle at 12% 8%, rgba(180, 83, 9, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--color-background) 0%, var(--color-background-secondary) 100%);
+  overflow: visible;
+  padding: 32px var(--page-padding) 48px;
+}
+
+.create-hero {
+  max-width: 1360px;
+  margin: 0 auto 22px;
+  padding: 32px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
   overflow: hidden;
+}
+
+.create-hero::after {
+  content: '墨';
+  position: absolute;
+  right: -14px;
+  bottom: -54px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 180px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(28, 25, 23, 0.035);
+  pointer-events: none;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.hero-copy h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.18;
+  color: var(--color-text);
+}
+
+.hero-copy p:last-child {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.hero-status {
+  position: relative;
+  z-index: 1;
+  min-width: 180px;
+  padding: 18px 20px;
+  border-radius: var(--radius-xl);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.status-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.hero-status strong {
+  display: block;
+  font-size: 18px;
+  color: var(--color-text);
 }
 
 .create-layout {
   display: grid;
-  grid-template-columns: 320px 1fr 300px;
-  height: 100%;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas:
+    "flow flow"
+    "canvas dock";
+  gap: 22px;
+  max-width: 1360px;
+  margin: 0 auto;
+  height: auto;
 }
 
-/* 左侧边栏 */
+/* 顶部流程带 */
 .sidebar-left {
-  background: white;
-  border-right: 1px solid var(--color-border);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+  grid-area: flow;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 22px;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 .sidebar-header {
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .sidebar-title {
@@ -1038,23 +1196,25 @@ onBeforeUnmount(() => {
 }
 
 .flow-timeline {
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .flow-item {
-  display: flex;
-  gap: 14px;
-  padding: 14px 0;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  padding: 14px 12px;
   position: relative;
+  min-height: 104px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  transition: all var(--transition-normal);
 
   &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 46px;
-    bottom: -14px;
-    width: 2px;
-    background: var(--color-border);
+    display: none;
   }
 
   &.completed::before {
@@ -1062,7 +1222,17 @@ onBeforeUnmount(() => {
   }
 
   &.active::before {
-    background: linear-gradient(180deg, var(--color-primary) 50%, var(--color-border) 50%);
+    display: none;
+  }
+
+  &.active {
+    background: #fff;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.completed {
+    background: var(--color-background-secondary);
   }
 }
 
@@ -1084,7 +1254,7 @@ onBeforeUnmount(() => {
   }
 
   .active & {
-    background: rgba(34, 197, 94, 0.1);
+    background: rgba(28, 25, 23, 0.1);
     color: var(--color-primary);
     border: 2px solid var(--color-primary);
   }
@@ -1109,7 +1279,7 @@ onBeforeUnmount(() => {
 }
 
 .flow-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 2px;
@@ -1124,7 +1294,7 @@ onBeforeUnmount(() => {
 }
 
 .flow-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-muted);
   line-height: 1.4;
 }
@@ -1150,31 +1320,49 @@ onBeforeUnmount(() => {
 
 /* 主内容区 */
 .main-content {
-  padding: 32px 40px;
-  overflow-y: auto;
-  background: white;
+  grid-area: canvas;
+  min-height: 620px;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
 }
 
 /* 输入状态 */
 .input-state {
-  max-width: 700px;
-  margin: 0 auto;
-  padding-top: 60px;
+  max-width: none;
+  margin: 0;
+  padding-top: 0;
 }
 
 .input-card {
-  background: var(--color-background-secondary);
-  border-radius: var(--radius-xl);
-  padding: 40px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 34px;
+  box-shadow: var(--shadow-lg);
+  min-height: 620px;
+  position: relative;
+  overflow: hidden;
+}
+
+.input-card::before {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px dashed rgba(28, 25, 23, 0.08);
+  border-radius: 22px;
+  pointer-events: none;
 }
 
 .input-header {
-  text-align: center;
-  margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
+  text-align: left;
+  margin-bottom: 28px;
 }
 
 .input-title {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
   margin: 0 0 8px;
   color: var(--color-text);
@@ -1187,24 +1375,30 @@ onBeforeUnmount(() => {
 }
 
 .input-area {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .topic-textarea {
-  font-size: 15px;
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  background: white;
+  grid-column: 1 / -1;
+  font-size: 16px;
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  background: var(--color-background) !important;
+  min-height: 190px !important;
+  border-color: var(--color-border);
 
   &:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.1);
   }
 }
 
 .create-btn.ant-btn {
+  grid-column: 1 / -1;
   height: 52px;
   font-size: 16px;
   font-weight: 600;
@@ -1212,7 +1406,7 @@ onBeforeUnmount(() => {
   background: var(--gradient-primary) !important;
   border: none !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.3) !important;
 
   &:hover,
   &:focus,
@@ -1220,7 +1414,7 @@ onBeforeUnmount(() => {
     background: var(--gradient-primary) !important;
     color: white !important;
     border: none !important;
-    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3) !important;
+    box-shadow: 0 4px 14px rgba(28, 25, 23, 0.3) !important;
     opacity: 0.92;
   }
 
@@ -1234,6 +1428,7 @@ onBeforeUnmount(() => {
 }
 
 .quota-warning {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1249,10 +1444,10 @@ onBeforeUnmount(() => {
 
 /* 文章风格选择 */
 .style-section {
-  padding: 16px;
+  padding: 18px;
   background: var(--color-background-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
 }
 
 .style-group {
@@ -1272,20 +1467,20 @@ onBeforeUnmount(() => {
 
 .style-group :deep(.ant-radio-wrapper:hover) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(28, 25, 23, 0.04);
 }
 
 .style-group :deep(.ant-radio-wrapper-checked) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(28, 25, 23, 0.08);
 }
 
 /* 配图方式选择 */
 .image-methods-section {
-  padding: 16px;
+  padding: 18px;
   background: var(--color-background-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
 }
 
 .section-header {
@@ -1323,12 +1518,12 @@ onBeforeUnmount(() => {
 
 .methods-group :deep(.ant-checkbox-wrapper:hover) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(28, 25, 23, 0.04);
 }
 
 .methods-group :deep(.ant-checkbox-wrapper-checked) {
   border-color: var(--color-primary);
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(28, 25, 23, 0.08);
 }
 
 .methods-group :deep(.ant-checkbox-wrapper-disabled) {
@@ -1348,11 +1543,11 @@ onBeforeUnmount(() => {
   gap: 6px;
   margin-top: 12px;
   padding: 10px 14px;
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(28, 25, 23, 0.08);
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-primary-dark);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(28, 25, 23, 0.2);
 
   .anticon {
     color: var(--color-primary);
@@ -1373,6 +1568,11 @@ onBeforeUnmount(() => {
 .creating-state,
 .completed-state {
   max-width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 34px;
+  box-shadow: var(--shadow-lg);
 }
 
 /* 标题区域 */
@@ -1401,8 +1601,9 @@ onBeforeUnmount(() => {
 .outline-preview {
   margin-bottom: 24px;
   padding: 20px 24px;
-  background: var(--color-background-secondary);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
 }
 
 .section-label {
@@ -1423,7 +1624,7 @@ onBeforeUnmount(() => {
 
 .outline-item {
   padding: 12px 16px;
-  background: white;
+  background: var(--color-background);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary);
 }
@@ -1558,22 +1759,32 @@ onBeforeUnmount(() => {
 
 /* 右侧辅助面板 */
 .sidebar-right {
-  background: white;
-  border-left: 1px solid var(--color-border);
-  padding: 24px;
+  grid-area: dock;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
+  overflow: visible;
+  position: sticky;
+  top: calc(var(--header-height) + 20px);
+  align-self: start;
+  max-height: calc(100vh - var(--header-height) - 40px);
   overflow-y: auto;
+  box-shadow: var(--shadow-lg);
 }
 
 .panel-section {
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-border-light);
+  padding: 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
 
   &:last-of-type {
-    border-bottom: none;
-    padding-bottom: 0;
+    border-bottom: 1px solid var(--color-border-light);
+    padding-bottom: 16px;
   }
 }
 
@@ -1589,10 +1800,22 @@ onBeforeUnmount(() => {
 
 /* 配额信息样式 */
 .quota-section {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
-  border-radius: var(--radius-lg);
-  padding: 16px !important;
-  margin: -8px -8px 12px -8px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  padding: 18px !important;
+  margin: 0;
+
+  .panel-title,
+  .quota-text,
+  .quota-label,
+  .quota-unit {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .quota-number {
+    color: #fff;
+  }
 }
 
 .quota-admin {
@@ -1674,8 +1897,8 @@ onBeforeUnmount(() => {
 
 .hot-tag {
   display: inline-block;
-  padding: 8px 12px;
-  background: var(--color-background-secondary);
+  padding: 7px 11px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: 12px;
@@ -1686,7 +1909,7 @@ onBeforeUnmount(() => {
   &:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
-    background: rgba(34, 197, 94, 0.05);
+    background: rgba(28, 25, 23, 0.05);
     transform: translateY(-1px);
   }
 }
@@ -1703,12 +1926,12 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background: var(--color-background-secondary);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.05);
+    background: rgba(28, 25, 23, 0.05);
   }
 }
 
@@ -1757,7 +1980,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: var(--color-background-secondary);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
 }
 
@@ -1777,7 +2000,7 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 8px;
   padding: 12px;
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(28, 25, 23, 0.08);
   border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-primary-dark);
@@ -1864,7 +2087,7 @@ onBeforeUnmount(() => {
 /* 选题展示 */
 .topic-display {
   padding: 12px 16px;
-  background: var(--color-background-secondary);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary);
 
@@ -1902,7 +2125,7 @@ onBeforeUnmount(() => {
 .stat-item {
   text-align: center;
   padding: 16px 12px;
-  background: var(--color-background-secondary);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
 }
 
@@ -1922,7 +2145,7 @@ onBeforeUnmount(() => {
 .panel-footer {
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid var(--color-border-light);
+  border-top: none;
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -2058,21 +2281,46 @@ onBeforeUnmount(() => {
 /* 响应式 */
 @media (max-width: 1400px) {
   .create-layout {
-    grid-template-columns: 280px 1fr 260px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .flow-timeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1200px) {
   .create-layout {
-    grid-template-columns: 240px 1fr 220px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "flow"
+      "canvas"
+      "dock";
+  }
+
+  .sidebar-right {
+    position: static;
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-footer {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 992px) {
   .article-create-page {
-    height: auto;
-    min-height: calc(100vh - 64px);
+    padding: 20px 16px 36px;
+    min-height: calc(100vh - var(--header-height));
     overflow: visible;
+  }
+
+  .create-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px 24px;
   }
 
   .create-layout {
@@ -2080,13 +2328,38 @@ onBeforeUnmount(() => {
     height: auto;
   }
 
-  .sidebar-left,
-  .sidebar-right {
-    display: none;
+  .sidebar-left {
+    grid-template-columns: 1fr;
   }
 
-  .main-content {
-    padding: 20px;
+  .flow-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .input-area {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-copy h1 {
+    font-size: 28px;
+  }
+
+  .input-card,
+  .creating-state,
+  .completed-state {
+    padding: 24px;
+    border-radius: var(--radius-xl);
+  }
+
+  .flow-timeline,
+  .sidebar-right {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-item {
+    min-height: auto;
   }
 }
 </style>

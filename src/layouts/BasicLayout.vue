@@ -1,12 +1,9 @@
 <template>
   <a-layout class="basic-layout">
-    <!-- 顶部导航栏 -->
     <GlobalHeader />
-    <!-- 主要内容区域 -->
     <a-layout-content class="main-content">
       <router-view />
     </a-layout-content>
-    <!-- 底部版权信息 -->
     <GlobalFooter />
   </a-layout>
 </template>
@@ -18,13 +15,28 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
 
 <style scoped>
 .basic-layout {
-  background: none;
+  min-height: 100vh;
+  background: var(--color-background);
+  position: relative;
+}
+
+.basic-layout::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(180, 83, 9, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(28, 25, 23, 0.03), transparent);
 }
 
 .main-content {
+  position: relative;
+  z-index: 1;
   width: 100%;
   padding: 0;
-  background: none;
+  background: transparent;
   margin: 0;
 }
 </style>

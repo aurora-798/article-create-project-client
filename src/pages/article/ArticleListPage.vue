@@ -44,16 +44,42 @@
           <a-select
               v-model:value="statusFilter"
               placeholder="全部状态"
-              style="width: 120px"
+              style="width: 150px"
               allow-clear
+              popup-class-name="status-select-popup"
               @change="handleStatusChange"
               class="status-select"
           >
-            <a-select-option value="">全部状态</a-select-option>
-            <a-select-option value="COMPLETED">已完成</a-select-option>
-            <a-select-option value="PROCESSING">生成中</a-select-option>
-            <a-select-option value="PENDING">等待中</a-select-option>
-            <a-select-option value="FAILED">失败</a-select-option>
+            <a-select-option value="">
+              <span class="status-option status-option-all">
+                <span class="status-option-dot"></span>
+                全部状态
+              </span>
+            </a-select-option>
+            <a-select-option value="COMPLETED">
+              <span class="status-option status-option-completed">
+                <span class="status-option-dot"></span>
+                已完成
+              </span>
+            </a-select-option>
+            <a-select-option value="PROCESSING">
+              <span class="status-option status-option-processing">
+                <span class="status-option-dot"></span>
+                生成中
+              </span>
+            </a-select-option>
+            <a-select-option value="PENDING">
+              <span class="status-option status-option-pending">
+                <span class="status-option-dot"></span>
+                等待中
+              </span>
+            </a-select-option>
+            <a-select-option value="FAILED">
+              <span class="status-option status-option-failed">
+                <span class="status-option-dot"></span>
+                失败
+              </span>
+            </a-select-option>
           </a-select>
         </div>
 
@@ -82,8 +108,7 @@
             </template>
 
             <template v-else-if="column.key === 'status'">
-              <span :class="['status-badge', `status-${record.status?.toLowerCase()}`]">
-                <span class="status-dot"></span>
+              <span :class="['moyu-status-badge', `moyu-status-${record.status?.toLowerCase()}`]">
                 {{ getStatusText(record.status) }}
               </span>
             </template>
@@ -274,11 +299,20 @@ const handleTableChange = (pag: any) => {
 
 // 查看文章
 const viewArticle = (record: API.ArticleVO) => {
+  if (!record.taskId) {
+    message.error('文章任务不存在')
+    return
+  }
   router.push(`/article/${record.taskId}`)
 }
 
 // 导出文章
 const exportArticle = async (record: API.ArticleVO) => {
+  if (!record.taskId) {
+    message.error('文章任务不存在')
+    return
+  }
+
   try {
     const res = await getArticle({ taskId: record.taskId })
     const article = res.data.data
@@ -358,13 +392,14 @@ onMounted(() => {
   padding-bottom: 60px;
 
   .page-header {
-    background: var(--gradient-hero);
-    padding: 32px 20px;
-    margin-bottom: 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 40px var(--page-padding) 36px;
+    margin-bottom: 28px;
   }
 
   .header-container {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -398,7 +433,7 @@ onMounted(() => {
     background: var(--gradient-primary) !important;
     border: none !important;
     color: white !important;
-    box-shadow: var(--shadow-green) !important;
+    box-shadow: var(--shadow-md) !important;
     transition: opacity var(--transition-normal) !important;
 
     &:hover,
@@ -407,7 +442,7 @@ onMounted(() => {
       background: var(--gradient-primary) !important;
       border: none !important;
       color: white !important;
-      box-shadow: var(--shadow-green) !important;
+      box-shadow: var(--shadow-md) !important;
       opacity: 0.92;
     }
 
@@ -417,9 +452,9 @@ onMounted(() => {
   }
 
   .container {
-    max-width: 1200px;
+    max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 var(--page-padding);
   }
 
   // 筛选栏
@@ -463,7 +498,24 @@ onMounted(() => {
 
   .status-select {
     :deep(.ant-select-selector) {
-      border-radius: var(--radius-md) !important;
+      min-height: 38px;
+      padding: 3px 12px !important;
+      border-radius: var(--radius-full) !important;
+      background: var(--color-background) !important;
+      border-color: var(--color-border) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    :deep(.ant-select-selection-item) {
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    :deep(.ant-select-arrow) {
+      color: var(--color-text-muted);
     }
   }
 
@@ -501,7 +553,7 @@ onMounted(() => {
     }
 
     :deep(.ant-table-tbody > tr:hover > td) {
-      background: rgba(34, 197, 94, 0.02);
+      background: rgba(28, 25, 23, 0.02);
     }
 
     :deep(.ant-table-pagination) {
@@ -535,59 +587,6 @@ onMounted(() => {
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-  }
-
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: var(--radius-full);
-    font-size: 12px;
-    font-weight: 500;
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-
-    &.status-completed {
-      background: rgba(34, 197, 94, 0.1);
-      color: var(--color-primary-dark);
-
-      .status-dot {
-        background: var(--color-primary);
-      }
-    }
-
-    &.status-processing {
-      background: rgba(59, 130, 246, 0.1);
-      color: #2563EB;
-
-      .status-dot {
-        background: #3B82F6;
-        animation: pulse 1.5s infinite;
-      }
-    }
-
-    &.status-pending {
-      background: var(--color-background-tertiary);
-      color: var(--color-text-secondary);
-
-      .status-dot {
-        background: var(--color-text-muted);
-      }
-    }
-
-    &.status-failed {
-      background: rgba(239, 68, 68, 0.1);
-      color: #DC2626;
-
-      .status-dot {
-        background: #EF4444;
-      }
     }
   }
 
@@ -663,6 +662,57 @@ onMounted(() => {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+:global(.status-select-popup) {
+  padding: 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+:global(.status-select-popup .ant-select-item) {
+  border-radius: var(--radius-md);
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+:global(.status-select-popup .ant-select-item-option-selected) {
+  background: var(--color-background-secondary) !important;
+  font-weight: 700;
+}
+
+:global(.status-option) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+:global(.status-option-dot) {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+:global(.status-option-completed .status-option-dot) {
+  background: #166534;
+}
+
+:global(.status-option-processing .status-option-dot) {
+  background: #b45309;
+  box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.12);
+}
+
+:global(.status-option-pending .status-option-dot) {
+  background: #78716c;
+}
+
+:global(.status-option-failed .status-option-dot) {
+  background: #b91c1c;
 }
 
 @media (max-width: 992px) {

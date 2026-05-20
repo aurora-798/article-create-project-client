@@ -1,39 +1,36 @@
 <template>
-  <a-layout-header class="header">
-    <div class="header-container">
-      <div class="header-left">
-        <RouterLink to="/" class="logo-link">
-          <div class="logo-wrapper">
-            <img src="@/assets/logo.svg" alt="Logo" class="logo-img" />
-            <h1 class="site-title">AI文章创作器</h1>
-          </div>
-        </RouterLink>
-      </div>
+  <header class="site-header">
+    <div class="header-inner">
+      <RouterLink to="/" class="brand">
+        <img src="@/assets/logo.svg" alt="墨语" class="brand-logo" />
+        <div class="brand-text">
+          <span class="brand-name">墨语</span>
+          <span class="brand-tagline">智能写作</span>
+        </div>
+      </RouterLink>
 
-      <!-- 中间：导航菜单 -->
-      <nav class="nav-center">
+      <nav class="main-nav">
         <RouterLink
-            v-for="item in menuItems"
-            :key="item.key"
-            :to="item.key"
-            :class="['nav-item', { active: selectedKeys.includes(item.key) }]"
+          v-for="item in menuItems"
+          :key="item.key"
+          :to="item.key"
+          :class="['nav-link', { active: selectedKeys.includes(item.key) }]"
         >
           <component :is="item.icon" class="nav-icon" />
-          <span>{{ item.label }}</span>
+          <span class="nav-label">{{ item.label }}</span>
         </RouterLink>
       </nav>
 
-      <!-- 右侧：用户操作区域 -->
-      <div class="header-right">
-        <div v-if="loginUserStore.loginUser.id" class="user-dropdown">
+      <div class="header-actions">
+        <div v-if="loginUserStore.loginUser.id" class="user-area">
           <a-dropdown>
-            <a-space class="user-info">
-              <a-avatar :src="loginUserStore.loginUser.userAvatar" :size="36" class="user-avatar" />
+            <button type="button" class="user-trigger">
+              <a-avatar :src="loginUserStore.loginUser.userAvatar" :size="34" class="user-avatar" />
               <span class="user-name">{{ loginUserStore.loginUser.userName ?? '无名' }}</span>
-            </a-space>
+            </button>
             <template #overlay>
-              <a-menu class="dropdown-menu">
-                <a-menu-item @click="doLogout" class="dropdown-item">
+              <a-menu class="user-menu">
+                <a-menu-item @click="doLogout" class="menu-item-logout">
                   <LogoutOutlined />
                   <span>退出登录</span>
                 </a-menu-item>
@@ -41,16 +38,14 @@
             </template>
           </a-dropdown>
         </div>
-        <div v-else>
-          <RouterLink to="/user/login" class="login-btn">登录</RouterLink>
-        </div>
+        <RouterLink v-else to="/user/login" class="login-link">登录</RouterLink>
       </div>
     </div>
-  </a-layout-header>
+  </header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, h } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
@@ -60,50 +55,26 @@ import {
   HomeOutlined,
   EditOutlined,
   UnorderedListOutlined,
-  SettingOutlined, BarChartOutlined
+  SettingOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons-vue'
 
 const loginUserStore = useLoginUserStore()
 const router = useRouter()
-// 当前选中菜单
 const selectedKeys = ref<string[]>(['/'])
-// 监听路由变化，更新当前选中菜单
+
 router.afterEach((to) => {
   selectedKeys.value = [to.path]
 })
 
-// 菜单配置项
 const originItems = [
-  {
-    key: '/',
-    icon: HomeOutlined,
-    label: '首页',
-  },
-  {
-    key: '/create',
-    icon: EditOutlined,
-    label: '创作',
-  },
-  {
-    key: '/article/list',
-    icon: UnorderedListOutlined,
-    label: '历史',
-  },
-  {
-    key: '/admin/userManage',
-    icon: SettingOutlined,
-    label: '管理',
-    admin: true,
-  },
-  {
-    key: '/admin/statistics',
-    icon: BarChartOutlined,
-    label: '运营数据',
-    admin: true,
-  },
+  { key: '/', icon: HomeOutlined, label: '首页' },
+  { key: '/create', icon: EditOutlined, label: '创作' },
+  { key: '/article/list', icon: UnorderedListOutlined, label: '历史' },
+  { key: '/admin/userManage', icon: SettingOutlined, label: '管理', admin: true },
+  { key: '/admin/statistics', icon: BarChartOutlined, label: '数据', admin: true },
 ]
 
-// 过滤菜单项
 const menuItems = computed(() => {
   return originItems.filter((item) => {
     if (item.admin) {
@@ -114,13 +85,10 @@ const menuItems = computed(() => {
   })
 })
 
-// 退出登录
 const doLogout = async () => {
   const res = await userLogout()
   if (res.data.code === 200) {
-    loginUserStore.setLoginUser({
-      userName: '未登录',
-    })
+    loginUserStore.setLoginUser({ userName: '未登录' })
     message.success('退出登录成功')
     await router.push('/user/login')
   } else {
@@ -130,196 +98,211 @@ const doLogout = async () => {
 </script>
 
 <style scoped>
-.header {
+.site-header {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 200;
+  height: var(--header-height);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  padding: 0;
-  height: 64px;
-  line-height: 64px;
   border-bottom: 1px solid var(--color-border);
-  transition: all var(--transition-normal);
-  overflow: hidden;
 }
 
-.header-container {
-  max-width: 1200px;
+.header-inner {
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   height: 100%;
-}
-
-.header-left {
+  padding: 0 var(--page-padding);
   display: flex;
   align-items: center;
+  gap: 32px;
 }
 
-.logo-link {
-  display: block;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  text-decoration: none;
   transition: opacity var(--transition-fast);
 }
 
-.logo-link:hover {
-  opacity: 0.8;
+.brand:hover {
+  opacity: 0.85;
 }
 
-.logo-wrapper {
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+.brand-text {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.2;
 }
 
-.logo-img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-}
-
-.site-title {
-  margin: 0;
-  font-size: 17px;
+.brand-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text);
-  white-space: nowrap;
-  letter-spacing: -0.3px;
+  letter-spacing: 0.08em;
 }
 
-/* 导航菜单 */
-.nav-center {
+.brand-tagline {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.main-nav {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
 }
 
-.nav-item {
-  display: flex;
+.nav-link {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
   text-decoration: none;
+  transition: all var(--transition-fast);
+  position: relative;
 }
 
-.nav-item:hover {
+.nav-link:hover {
   color: var(--color-text);
-  background: var(--color-background-secondary);
+  background: var(--color-background-tertiary);
 }
 
-.nav-item.active {
-  color: var(--color-primary-dark);
-  background: rgba(34, 197, 94, 0.1);
+.nav-link.active {
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 1px;
 }
 
 .nav-icon {
-  font-size: 16px;
+  font-size: 15px;
 }
 
-/* 用户区域 */
-.header-right {
+.header-actions {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
 }
 
-.user-dropdown {
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
   cursor: pointer;
-  height: 64px;
-  display: flex;
-  align-items: center;
-}
-
-.user-info {
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
 }
 
-.user-info:hover {
-  background: var(--color-background-secondary);
+.user-trigger:hover {
+  border-color: var(--color-text-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .user-avatar {
-  border: 2px solid var(--color-border);
+  border: none;
 }
 
 .user-name {
+  font-size: 13px;
   font-weight: 500;
   color: var(--color-text);
-  font-size: 14px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.login-btn {
+.login-link {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   height: 38px;
-  padding: 0 24px;
-  border-radius: var(--radius-md);
+  padding: 0 22px;
+  border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: #fff;
   background: var(--gradient-primary);
-  border: none;
-  box-shadow: var(--shadow-green);
-  transition: all var(--transition-normal);
   text-decoration: none;
+  transition: all var(--transition-normal);
 }
 
-.login-btn:hover {
-  color: white;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+.login-link:hover {
+  color: #fff;
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.dropdown-menu {
-  border-radius: var(--radius-md);
+.user-menu {
+  border-radius: var(--radius-lg) !important;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg) !important;
   border: 1px solid var(--color-border);
+  padding: 4px;
 }
 
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  transition: all var(--transition-fast);
+.menu-item-logout {
+  border-radius: var(--radius-md);
 }
 
-.dropdown-item:hover {
-  background: var(--color-background-secondary);
-}
+@media (max-width: 900px) {
+  .brand-tagline,
+  .nav-label,
+  .user-name {
+    display: none;
+  }
 
-/* 响应式 */
-@media (max-width: 768px) {
-  .header-container {
+  .header-inner {
+    gap: 12px;
     padding: 0 16px;
   }
 
-  .site-title {
-    display: none;
-  }
-
-  .nav-item span {
-    display: none;
-  }
-
-  .nav-item {
+  .nav-link {
     padding: 8px 12px;
   }
+}
 
-  .user-name {
-    display: none;
+@media (max-width: 520px) {
+  .main-nav {
+    gap: 0;
+  }
+
+  .nav-link {
+    padding: 8px 10px;
   }
 }
 </style>

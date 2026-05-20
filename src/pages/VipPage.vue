@@ -244,8 +244,8 @@ const handlePurchase = async () => {
 
 <style scoped lang="scss">
 .vip-page {
-  min-height: calc(100vh - 64px);
-  background: var(--gradient-hero);
+  min-height: calc(100vh - var(--header-height));
+  background: var(--color-background);
   padding: 48px 24px 80px;
 }
 
@@ -265,12 +265,12 @@ const handlePurchase = async () => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(180, 83, 9, 0.1);
+  border: 1px solid rgba(180, 83, 9, 0.2);
   border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-primary-dark);
+  color: var(--color-accent);
   margin-bottom: 20px;
 
   .anticon {
@@ -306,7 +306,7 @@ const handlePurchase = async () => {
   border-radius: var(--radius-xl);
   padding: 36px 32px;
   box-shadow: var(--shadow-xl);
-  border: 2px solid var(--color-primary);
+  border: 2px solid var(--color-accent);
   position: relative;
   height: fit-content;
   position: sticky;
@@ -324,7 +324,7 @@ const handlePurchase = async () => {
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
-  box-shadow: var(--shadow-green);
+  box-shadow: var(--shadow-accent);
 }
 
 .pricing-header {
@@ -339,12 +339,12 @@ const handlePurchase = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(180, 83, 9, 0.1);
   border-radius: var(--radius-lg);
 
   .anticon {
     font-size: 26px;
-    color: var(--color-primary);
+    color: var(--color-accent);
   }
 }
 
@@ -372,7 +372,7 @@ const handlePurchase = async () => {
 .price {
   font-size: 52px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-accent);
   line-height: 1;
 }
 
@@ -418,7 +418,7 @@ const handlePurchase = async () => {
   color: var(--color-text);
 
   .feature-check {
-    color: var(--color-primary);
+    color: var(--color-accent);
     font-size: 15px;
     flex-shrink: 0;
   }
@@ -431,7 +431,7 @@ const handlePurchase = async () => {
   font-weight: 600;
   background: var(--gradient-primary) !important;
   border: none !important;
-  box-shadow: var(--shadow-green) !important;
+  box-shadow: var(--shadow-md) !important;
   border-radius: var(--radius-md) !important;
 
   &:hover:not(:disabled) {
@@ -456,7 +456,7 @@ const handlePurchase = async () => {
   color: var(--color-text-secondary);
 
   .anticon {
-    color: var(--color-primary);
+    color: var(--color-accent);
     font-size: 13px;
   }
 }
@@ -479,7 +479,7 @@ const handlePurchase = async () => {
   color: var(--color-text);
 
   .anticon {
-    color: var(--color-primary);
+    color: var(--color-accent);
     font-size: 20px;
   }
 }
@@ -500,7 +500,7 @@ const handlePurchase = async () => {
   transition: all var(--transition-normal);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.06);
+    background: rgba(180, 83, 9, 0.06);
   }
 }
 
@@ -511,13 +511,13 @@ const handlePurchase = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(180, 83, 9, 0.1);
   border-radius: var(--radius-md);
 }
 
 .feature-icon {
   font-size: 18px;
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .feature-content {
@@ -556,7 +556,7 @@ const handlePurchase = async () => {
 
 .section-icon {
   font-size: 20px;
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 .section-title {
