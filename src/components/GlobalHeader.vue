@@ -30,6 +30,10 @@
             </button>
             <template #overlay>
               <a-menu class="user-menu">
+                <a-menu-item @click="goProfile" class="menu-item">
+                  <UserOutlined />
+                  <span>编辑资料</span>
+                </a-menu-item>
                 <a-menu-item @click="doLogout" class="menu-item-logout">
                   <LogoutOutlined />
                   <span>退出登录</span>
@@ -52,6 +56,7 @@ import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { userLogout } from '@/api/userController.ts'
 import {
   LogoutOutlined,
+  UserOutlined,
   HomeOutlined,
   EditOutlined,
   UnorderedListOutlined,
@@ -84,6 +89,10 @@ const menuItems = computed(() => {
     return true
   })
 })
+
+const goProfile = async () => {
+  await router.push('/user/profile')
+}
 
 const doLogout = async () => {
   const res = await userLogout()
@@ -275,6 +284,7 @@ const doLogout = async () => {
   padding: 4px;
 }
 
+.menu-item,
 .menu-item-logout {
   border-radius: var(--radius-md);
 }

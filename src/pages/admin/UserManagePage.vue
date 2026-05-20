@@ -13,6 +13,15 @@
         <a-form-item label="用户名">
           <a-input v-model:value="searchParams.userName" placeholder="输入用户名" />
         </a-form-item>
+        <a-form-item label="角色">
+          <a-select
+            v-model:value="searchParams.userRole"
+            allow-clear
+            placeholder="选择角色"
+            class="role-search"
+            :options="roleOptions"
+          />
+        </a-form-item>
         <a-form-item>
           <a-button type="primary" html-type="submit">搜索</a-button>
         </a-form-item>
@@ -44,19 +53,61 @@
             {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-button danger @click="doDelete(record.id)">删除</a-button>
+            <a-space>
+              <a-button type="primary" @click="openEditModal(record)">编辑</a-button>
+              <a-popconfirm title="确认删除该用户？" ok-text="确认" cancel-text="取消" @confirm="doDelete(record.id)">
+                <a-button danger>删除</a-button>
+              </a-popconfirm>
+            </a-space>
           </template>
         </template>
       </a-table>
     </a-card>
+
+    <a-modal
+      v-model:open="editModalOpen"
+      title="编辑用户"
+      ok-text="保存"
+      cancel-text="取消"
+      :confirm-loading="updating"
+      @ok="doUpdate"
+    >
+      <a-form ref="editFormRef" :model="editForm" layout="vertical">
+        <a-form-item name="userName" label="用户名" :rules="[{ required: true, message: '请输入用户名' }]">
+          <a-input v-model:value="editForm.userName" placeholder="请输入用户名" />
+        </a-form-item>
+        <a-form-item name="userAvatar" label="头像">
+          <UserAvatarUpload
+            v-model="editForm.userAvatar"
+            :fallback-text="editAvatarText"
+            :avatar-size="72"
+          />
+        </a-form-item>
+        <a-form-item name="userProfile" label="简介">
+          <a-textarea v-model:value="editForm.userProfile" placeholder="请输入简介" :rows="4" :maxlength="200" show-count />
+        </a-form-item>
+        <a-form-item name="userRole" label="用户角色" :rules="[{ required: true, message: '请选择用户角色' }]">
+          <a-select v-model:value="editForm.userRole" :options="roleOptions" placeholder="请选择角色" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { deleteUser, listUserVoByPage } from '@/api/userController.ts'
+import type { FormInstance } from 'ant-design-vue'
+import { deleteUser, listUserVoByPage, updateUser } from '@/api/userController.ts'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { USER_ROLE_ADMIN, USER_ROLE_USER, USER_ROLE_VIP } from '@/constant/user.ts'
+import UserAvatarUpload from '@/components/UserAvatarUpload.vue'
+
+const roleOptions = [
+  { label: '普通用户', value: USER_ROLE_USER },
+  { label: 'VIP', value: USER_ROLE_VIP },
+  { label: '管理员', value: USER_ROLE_ADMIN },
+]
 
 const columns = [
   { title: 'id', dataIndex: 'id' },
@@ -71,10 +122,21 @@ const columns = [
 
 const data = ref<API.UserVO[]>([])
 const total = ref(0)
+const editModalOpen = ref(false)
+const updating = ref(false)
+const editFormRef = ref<FormInstance>()
 
 const searchParams = reactive<API.UserQueryRequest>({
   pageNum: 1,
   pageSize: 10,
+})
+
+const editForm = reactive<API.UserUpdateRequest>({
+  id: undefined,
+  userName: '',
+  userAvatar: '',
+  userProfile: '',
+  userRole: USER_ROLE_USER,
 })
 
 const fetchData = async () => {
@@ -95,6 +157,8 @@ const pagination = computed(() => ({
   showTotal: (total: number) => `共 ${total} 条`,
 }))
 
+const editAvatarText = computed(() => editForm.userName?.slice(0, 1) || '墨')
+
 const doTableChange = (page: { current: number; pageSize: number }) => {
   searchParams.pageNum = page.current
   searchParams.pageSize = page.pageSize
@@ -106,7 +170,35 @@ const doSearch = () => {
   fetchData()
 }
 
-const doDelete = async (id: string) => {
+const openEditModal = (record: API.UserVO) => {
+  Object.assign(editForm, {
+    id: record.id,
+    userName: record.userName ?? '',
+    userAvatar: record.userAvatar ?? '',
+    userProfile: record.userProfile ?? '',
+    userRole: record.userRole ?? USER_ROLE_USER,
+  })
+  editModalOpen.value = true
+}
+
+const doUpdate = async () => {
+  await editFormRef.value?.validate()
+  updating.value = true
+  try {
+    const res = await updateUser({ ...editForm })
+    if (res.data.code === 200) {
+      message.success('更新成功')
+      editModalOpen.value = false
+      fetchData()
+    } else {
+      message.error('更新失败，' + res.data.message)
+    }
+  } finally {
+    updating.value = false
+  }
+}
+
+const doDelete = async (id?: number) => {
   if (!id) return
   const res = await deleteUser({ id })
   if (res.data.code === 200) {
@@ -162,6 +254,10 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--color-border-light);
+}
+
+.role-search {
+  min-width: 140px;
 }
 
 .admin-table :deep(.ant-table) {

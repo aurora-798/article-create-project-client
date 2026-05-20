@@ -123,6 +123,33 @@ export async function userRegister(
   });
 }
 
+/** 上传头像图片 POST /user/upload/avatar */
+export async function uploadUserAvatar(
+  body: FormData,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseString>("/user/upload/avatar", {
+    method: "POST",
+    data: body,
+    ...(options || {}),
+  });
+}
+
+/** 当前登录用户更新个人资料 POST /user/update/my */
+export async function updateMyUser(
+  body: API.UserUpdateMyRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>("/user/update/my", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
 /** 此处后端没有提供注释 POST /user/update */
 export async function updateUser(
   body: API.UserUpdateRequest,
