@@ -1,31 +1,39 @@
 <template>
   <div class="admin-page">
-    <header class="admin-header">
-      <h1>用户管理</h1>
-      <p>管理平台注册用户</p>
-    </header>
+    <section class="page-hero">
+      <div class="hero-copy">
+        <p class="hero-kicker">后台工作台</p>
+        <h1>用户管理</h1>
+        <p>集中查看平台用户，快速维护头像、昵称、简介与角色权限。</p>
+      </div>
+      <div class="hero-status">
+        <span class="status-label">用户总数</span>
+        <strong>{{ total }}</strong>
+      </div>
+    </section>
 
-    <a-card :bordered="false" class="admin-card">
-      <a-form layout="inline" :model="searchParams" @finish="doSearch" class="search-form">
-        <a-form-item label="账号">
-          <a-input v-model:value="searchParams.userAccount" placeholder="输入账号" />
-        </a-form-item>
-        <a-form-item label="用户名">
-          <a-input v-model:value="searchParams.userName" placeholder="输入用户名" />
-        </a-form-item>
-        <a-form-item label="角色">
-          <a-select
-            v-model:value="searchParams.userRole"
-            allow-clear
-            placeholder="选择角色"
-            class="role-search"
-            :options="roleOptions"
-          />
-        </a-form-item>
-        <a-form-item>
-          <a-button type="primary" html-type="submit">搜索</a-button>
-        </a-form-item>
-      </a-form>
+    <div class="container">
+      <a-card :bordered="false" class="admin-card">
+        <a-form layout="inline" :model="searchParams" @finish="doSearch" class="search-form">
+          <a-form-item label="账号">
+            <a-input v-model:value="searchParams.userAccount" placeholder="输入账号" />
+          </a-form-item>
+          <a-form-item label="用户名">
+            <a-input v-model:value="searchParams.userName" placeholder="输入用户名" />
+          </a-form-item>
+          <a-form-item label="角色">
+            <a-select
+              v-model:value="searchParams.userRole"
+              allow-clear
+              placeholder="选择角色"
+              class="role-search"
+              :options="roleOptions"
+            />
+          </a-form-item>
+          <a-form-item>
+            <a-button type="primary" html-type="submit">搜索</a-button>
+          </a-form-item>
+        </a-form>
 
       <a-table
         :columns="columns"
@@ -62,7 +70,8 @@
           </template>
         </template>
       </a-table>
-    </a-card>
+      </a-card>
+    </div>
 
     <a-modal
       v-model:open="editModalOpen"
@@ -217,33 +226,107 @@ onMounted(() => {
 <style scoped>
 .admin-page {
   min-height: calc(100vh - var(--header-height));
-  background: var(--color-background-secondary);
-  padding-bottom: 48px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(180, 83, 9, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--color-background) 0%, var(--color-background-secondary) 100%);
+  padding: 32px var(--page-padding) 48px;
 }
 
-.admin-header {
+.page-hero {
+  max-width: var(--content-max-width);
+  margin: 0 auto 22px;
+  padding: 32px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: 36px var(--page-padding) 28px;
-  margin-bottom: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
 }
 
-.admin-header h1 {
-  font-size: 26px;
-  margin: 0 0 4px;
+.page-hero::after {
+  content: '管';
+  position: absolute;
+  right: -14px;
+  bottom: -54px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 180px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(28, 25, 23, 0.035);
+  pointer-events: none;
 }
 
-.admin-header p {
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.hero-copy h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.18;
+  color: var(--color-text);
+}
+
+.hero-copy p:last-child {
   margin: 0;
-  font-size: 14px;
   color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.hero-status {
+  position: relative;
+  z-index: 1;
+  min-width: 180px;
+  padding: 18px 20px;
+  border-radius: var(--radius-xl);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.status-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.hero-status strong {
+  display: block;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
 }
 
 .admin-card {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-2xl);
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 .admin-card :deep(.ant-card-body) {
@@ -262,5 +345,21 @@ onMounted(() => {
 
 .admin-table :deep(.ant-table) {
   border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 20px 16px 36px;
+  }
+
+  .page-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px 24px;
+  }
+
+  .hero-status {
+    width: 100%;
+  }
 }
 </style>

@@ -1,12 +1,14 @@
 <template>
   <div class="article-list-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-container">
-        <div class="header-content">
-          <h1 class="page-title">历史记录</h1>
-          <p class="page-subtitle">管理您创作的所有文章</p>
-        </div>
+    <section class="page-hero">
+      <div class="hero-copy">
+        <p class="hero-kicker">创作档案</p>
+        <h1>历史记录</h1>
+        <p>回看你的创作成果，继续编辑、导出或整理每一篇文章。</p>
+      </div>
+      <div class="hero-action">
+        <span class="action-label">文章总数</span>
+        <strong>{{ pagination.total }}</strong>
         <a-button type="primary" size="large" @click="goToCreate" class="create-btn">
           <template #icon>
             <PlusOutlined />
@@ -14,7 +16,7 @@
           创作新文章
         </a-button>
       </div>
-    </div>
+    </section>
 
     <div class="container">
       <!-- 搜索筛选栏 -->
@@ -387,40 +389,96 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .article-list-page {
-  background: var(--color-background-secondary);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(180, 83, 9, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--color-background) 0%, var(--color-background-secondary) 100%);
   min-height: 100vh;
-  padding-bottom: 60px;
+  padding: 32px var(--page-padding) 60px;
 
-  .page-header {
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
-    padding: 40px var(--page-padding) 36px;
-    margin-bottom: 28px;
-  }
-
-  .header-container {
+  .page-hero {
     max-width: var(--content-max-width);
-    margin: 0 auto;
+    margin: 0 auto 22px;
+    padding: 32px 36px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
+    gap: 32px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      content: '史';
+      position: absolute;
+      right: -14px;
+      bottom: -54px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 180px;
+      font-weight: 700;
+      line-height: 1;
+      color: rgba(28, 25, 23, 0.035);
+      pointer-events: none;
+    }
   }
 
-  .header-content {
-    color: var(--color-text);
+  .hero-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
   }
 
-  .page-title {
-    font-size: 28px;
+  .hero-kicker {
+    display: inline-flex;
+    margin: 0 0 12px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
+    font-size: 12px;
     font-weight: 700;
-    margin: 0 0 6px;
-    letter-spacing: -0.5px;
+    letter-spacing: 0.14em;
+  }
+
+  .hero-copy h1 {
+    margin: 0 0 10px;
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.18;
+    font-weight: 700;
     color: var(--color-text);
   }
 
-  .page-subtitle {
-    font-size: 14px;
+  .hero-copy p:last-child {
+    margin: 0;
     color: var(--color-text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .hero-action {
+    position: relative;
+    z-index: 1;
+    min-width: 190px;
+    padding: 18px 20px;
+    border-radius: var(--radius-xl);
+    background: var(--color-background-secondary);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .action-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  .hero-action strong {
+    font-size: 24px;
+    line-height: 1;
+    color: var(--color-text);
     margin: 0;
   }
 
@@ -454,7 +512,6 @@ onMounted(() => {
   .container {
     max-width: var(--content-max-width);
     margin: 0 auto;
-    padding: 0 var(--page-padding);
   }
 
   // 筛选栏
@@ -464,9 +521,10 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 16px;
     padding: 16px 20px;
-    background: white;
-    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    border-radius: var(--radius-2xl);
     border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
   }
 
   .filter-left {
@@ -527,9 +585,9 @@ onMounted(() => {
   }
 
   .table-card {
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-2xl);
     border: 1px solid var(--color-border);
-    box-shadow: none;
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
 
     :deep(.ant-card-body) {
@@ -735,18 +793,20 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .article-list-page {
-    .page-header {
-      padding: 24px 20px;
-    }
+    padding: 20px 16px 36px;
 
-    .header-container {
+    .page-hero {
       flex-direction: column;
-      gap: 16px;
-      text-align: center;
+      align-items: flex-start;
+      padding: 26px 24px;
     }
 
-    .page-title {
-      font-size: 22px;
+    .hero-action {
+      width: 100%;
+    }
+
+    .hero-copy h1 {
+      font-size: 28px;
     }
 
     .create-btn {
