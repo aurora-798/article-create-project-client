@@ -79,6 +79,36 @@ export async function createArticle(
   });
 }
 
+/** 基于已有文章重新创建任务 POST /article/recreate */
+export async function recreateArticle(
+  body: API.ArticleRecreateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseString>("/article/recreate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
+/** 启动大纲生成 POST /article/start-outline */
+export async function startOutline(
+  body: API.ArticleStartOutlineRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseVoid>("/article/start-outline", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
 /** 删除文章 POST /article/delete */
 export async function deleteArticle(
   body: API.DeleteRequest,

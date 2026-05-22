@@ -48,6 +48,14 @@ declare namespace API {
     enabledImageMethods?: string[];
   };
 
+  type ArticleRecreateRequest = {
+    sourceTaskId?: string;
+  };
+
+  type ArticleStartOutlineRequest = {
+    taskId?: string;
+  };
+
   type ArticleQueryRequest = {
     pageNum?: number;
     pageSize?: number;

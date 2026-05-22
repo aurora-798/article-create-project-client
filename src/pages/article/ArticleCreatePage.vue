@@ -8,7 +8,7 @@
       </div>
       <div class="hero-status">
         <span class="status-label">当前阶段</span>
-        <strong>{{ currentPhase === 'INPUT' ? '空闲中' : agentSteps[currentStep]?.title || '创作中' }}</strong>
+        <strong>{{ heroStatusText }}</strong>
       </div>
     </section>
 
@@ -571,7 +571,7 @@ import {
   CrownOutlined,
   FileTextOutlined
 } from '@ant-design/icons-vue'
-import { createArticle, confirmTitle, confirmOutline } from '@/api/articleController'
+import { createArticle, confirmTitle, confirmOutline, getArticle, startOutline } from '@/api/articleController'
 import { marked } from 'marked'
 import TitleSelectingStage from './components/TitleSelectingStage.vue'
 import OutlineEditingStage from './components/OutlineEditingStage.vue'
@@ -625,6 +625,12 @@ const taskId = ref('')
 const errorVisible = ref(false)
 const errorMessage = ref('')
 const confirmLoading = ref(false)
+
+const heroStatusText = computed(() => {
+  if (currentPhase.value === 'INPUT') return '空闲中'
+  if (currentPhase.value === 'COMPLETED') return '已完成'
+  return agentSteps[currentStep.value]?.title || '创作中'
+})
 
 const activeFlowIndex = computed(() => {
   if (!flowStarted.value) {
@@ -745,6 +751,54 @@ let eventSource: EventSource | null = null
 // Markdown 转 HTML
 const markdownToHtml = (markdown: string | undefined) => {
   return marked(markdown || '')
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms))
+
+// 重新创建入口：任务已复用旧标题，连接 SSE 后再启动大纲生成
+const initializeRecreatedTask = async (newTaskId: string) => {
+  taskId.value = newTaskId
+  currentPhase.value = 'OUTLINE_GENERATING'
+  currentStep.value = 1
+  flowStarted.value = true
+  isCreating.value = true
+  isOutlineStreaming.value = true
+  realtimeLogs.value = []
+  addLog(`重新创建任务已准备，ID: ${newTaskId}`, 'success')
+
+  try {
+    const res = await getArticle({ taskId: newTaskId })
+    const recreatedArticle = res.data.data
+    if (recreatedArticle) {
+      topic.value = recreatedArticle.topic || ''
+      article.value = {
+        ...article.value,
+        mainTitle: recreatedArticle.mainTitle || '',
+        subTitle: recreatedArticle.subTitle || '',
+        content: '',
+        fullContent: '',
+        images: [],
+      }
+    }
+
+    eventSource = connectSSE(taskId.value, {
+      onMessage: handleSSEMessage,
+      onError: handleSSEError,
+      onComplete: handleSSEComplete,
+    })
+
+    // Spring SSE 连接可能不会及时触发浏览器 open 事件，短暂等待后直接启动后续阶段。
+    await sleep(300)
+    await startOutline({ taskId: taskId.value })
+    addLog('实时连接已建立，开始生成大纲...', 'info')
+  } catch (error) {
+    const err = error as Error
+    message.error(err.message || '加载重新创建任务失败')
+    isCreating.value = false
+    isOutlineStreaming.value = false
+    flowStarted.value = false
+    currentPhase.value = 'INPUT'
+  }
 }
 
 // 自动滚动到底部
@@ -1043,7 +1097,12 @@ const resetCreate = () => {
 }
 
 // 组件挂载时检查路由参数
-onMounted(() => {
+onMounted(async () => {
+  if (route.query.taskId && route.query.mode === 'recreate') {
+    await initializeRecreatedTask(route.query.taskId as string)
+    return
+  }
+
   if (route.query.topic) {
     topic.value = route.query.topic as string
   }

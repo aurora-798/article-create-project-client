@@ -22,7 +22,12 @@
               </template>
               重新创建
             </a-button>
-            <a-button type="primary" @click="exportMarkdown" class="export-btn">
+            <a-button
+                v-if="article?.status === 'COMPLETED'"
+                type="primary"
+                @click="exportMarkdown"
+                class="export-btn"
+            >
               <template #icon>
                 <DownloadOutlined />
               </template>
@@ -190,7 +195,7 @@ import {
   RedoOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons-vue'
-import { getArticle, getExecutionLogs } from '@/api/articleController'
+import { getArticle, getExecutionLogs, recreateArticle } from '@/api/articleController'
 import { marked } from 'marked'
 import dayjs from 'dayjs'
 
@@ -338,15 +343,35 @@ const handleRetry = () => {
   Modal.confirm({
     title: '确认重试',
     content: '将使用相同的选题和配置重新创建文章，是否继续？',
-    okText: '确认',
+    okText: '继续',
     cancelText: '取消',
-    onOk: () => {
-      router.push({
-        path: '/create',
-        query: {
-          topic: article.value?.topic
+    onOk: async () => {
+      if (!article.value?.taskId) {
+        message.error('文章任务不存在')
+        return
+      }
+
+      try {
+        const res = await recreateArticle({
+          sourceTaskId: article.value.taskId
+        })
+        const newTaskId = res.data.data
+        if (!newTaskId) {
+          throw new Error('重新创建失败：未返回任务ID')
         }
-      })
+
+        router.push({
+          path: '/create',
+          query: {
+            taskId: newTaskId,
+            mode: 'recreate'
+          }
+        })
+      } catch (error) {
+        const err = error as Error
+        message.error(err.message || '重新创建失败')
+        throw error
+      }
     }
   })
 }
