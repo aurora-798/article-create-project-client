@@ -755,6 +755,35 @@ const markdownToHtml = (markdown: string | undefined) => {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms))
 
+const normalizeOutline = (items: API.OutlineItem[] | undefined) => {
+  return (items || [])
+      .filter((item): item is API.OutlineItem => !!item)
+      .map((item, index) => ({
+        section: item.section ?? index + 1,
+        title: item.title || '',
+        points: item.points || [],
+      }))
+}
+
+const normalizeTitleOptions = (items: API.TitleOption[] | undefined) => {
+  return (items || []).map((item) => ({
+    mainTitle: item.mainTitle || '',
+    subTitle: item.subTitle || '',
+  }))
+}
+
+const applyArticleSnapshot = (snapshot: API.ArticleVO) => {
+  topic.value = snapshot.topic || ''
+  article.value = {
+    ...article.value,
+    mainTitle: snapshot.mainTitle || '',
+    subTitle: snapshot.subTitle || '',
+    content: snapshot.content || '',
+    fullContent: snapshot.fullContent || '',
+    images: snapshot.images || [],
+  }
+}
+
 // 重新创建入口：任务已复用旧标题，连接 SSE 后再启动大纲生成
 const initializeRecreatedTask = async (newTaskId: string) => {
   taskId.value = newTaskId
@@ -770,15 +799,12 @@ const initializeRecreatedTask = async (newTaskId: string) => {
     const res = await getArticle({ taskId: newTaskId })
     const recreatedArticle = res.data.data
     if (recreatedArticle) {
-      topic.value = recreatedArticle.topic || ''
-      article.value = {
-        ...article.value,
-        mainTitle: recreatedArticle.mainTitle || '',
-        subTitle: recreatedArticle.subTitle || '',
+      applyArticleSnapshot({
+        ...recreatedArticle,
         content: '',
         fullContent: '',
         images: [],
-      }
+      })
     }
 
     eventSource = connectSSE(taskId.value, {
@@ -798,6 +824,53 @@ const initializeRecreatedTask = async (newTaskId: string) => {
     isOutlineStreaming.value = false
     flowStarted.value = false
     currentPhase.value = 'INPUT'
+  }
+}
+
+// 从历史任务继续：恢复等待用户确认的阶段
+const initializeExistingTask = async (existingTaskId: string) => {
+  try {
+    const res = await getArticle({ taskId: existingTaskId })
+    const existingArticle = res.data.data
+    if (!existingArticle) {
+      throw new Error('文章数据不存在')
+    }
+
+    taskId.value = existingTaskId
+    applyArticleSnapshot(existingArticle)
+    flowStarted.value = true
+    isCreating.value = false
+    isStreaming.value = false
+    isOutlineStreaming.value = false
+    realtimeLogs.value = []
+
+    switch (existingArticle.phase) {
+      case 'TITLE_SELECTING':
+        currentPhase.value = 'TITLE_SELECTING'
+        currentStep.value = 1
+        titleOptions.value = normalizeTitleOptions(existingArticle.titleOptions)
+        addLog('标题方案已生成，等待选择标题', 'info')
+        break
+
+      case 'OUTLINE_EDITING':
+        currentPhase.value = 'OUTLINE_EDITING'
+        currentStep.value = 2
+        outline.value = normalizeOutline(existingArticle.outline)
+        outlineRaw.value = JSON.stringify({ sections: outline.value })
+        addLog('大纲已生成，等待确认', 'info')
+        break
+
+      default:
+        message.warning('该任务当前不处于可继续确认的阶段')
+        currentPhase.value = 'INPUT'
+        flowStarted.value = false
+        break
+    }
+  } catch (error) {
+    const err = error as Error
+    message.error(err.message || '加载历史任务失败')
+    currentPhase.value = 'INPUT'
+    flowStarted.value = false
   }
 }
 
@@ -1100,6 +1173,11 @@ const resetCreate = () => {
 onMounted(async () => {
   if (route.query.taskId && route.query.mode === 'recreate') {
     await initializeRecreatedTask(route.query.taskId as string)
+    return
+  }
+
+  if (route.query.taskId && route.query.mode === 'resume') {
+    await initializeExistingTask(route.query.taskId as string)
     return
   }
 

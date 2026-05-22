@@ -70,6 +70,18 @@
                 生成中
               </span>
             </a-select-option>
+            <a-select-option value="TITLE_SELECTING">
+              <span class="status-option status-option-pending">
+                <span class="status-option-dot"></span>
+                待选择标题
+              </span>
+            </a-select-option>
+            <a-select-option value="OUTLINE_EDITING">
+              <span class="status-option status-option-pending">
+                <span class="status-option-dot"></span>
+                待确认大纲
+              </span>
+            </a-select-option>
             <a-select-option value="PENDING">
               <span class="status-option status-option-pending">
                 <span class="status-option-dot"></span>
@@ -110,8 +122,8 @@
             </template>
 
             <template v-else-if="column.key === 'status'">
-              <span :class="['moyu-status-badge', `moyu-status-${record.status?.toLowerCase()}`]">
-                {{ getStatusText(record.status) }}
+              <span :class="['moyu-status-badge', getArticleDisplayStatus(record).className]">
+                {{ getArticleDisplayStatus(record).text }}
               </span>
             </template>
 
@@ -125,7 +137,22 @@
                   <EyeOutlined />
                   查看
                 </a-button>
-                <a-button type="link" size="small" @click="exportArticle(record)" class="action-btn export-btn">
+                <a-button
+                    v-if="canContinueArticle(record)"
+                    type="link"
+                    size="small"
+                    @click="continueArticle(record)"
+                    class="action-btn view-btn"
+                >
+                  继续创作
+                </a-button>
+                <a-button
+                    v-if="record.status === 'COMPLETED'"
+                    type="link"
+                    size="small"
+                    @click="exportArticle(record)"
+                    class="action-btn export-btn"
+                >
                   <DownloadOutlined />
                   导出
                 </a-button>
@@ -176,6 +203,7 @@ import {
 } from '@ant-design/icons-vue'
 import { listArticle, deleteArticle as deleteArticleApi, getArticle } from '@/api/articleController'
 import dayjs, { type Dayjs } from 'dayjs'
+import { canContinueArticle, getArticleDisplayStatus } from '@/utils/articleStatus'
 
 const router = useRouter()
 
@@ -210,7 +238,7 @@ const columns = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 240,
   },
 ]
 
@@ -249,7 +277,7 @@ const loadData = async () => {
     }
 
     if (statusFilter.value) {
-      records = records.filter((item: API.ArticleVO) => item.status === statusFilter.value)
+      records = records.filter((item: API.ArticleVO) => getArticleDisplayStatus(item).key === statusFilter.value)
     }
 
     if (dateRange.value) {
@@ -306,6 +334,22 @@ const viewArticle = (record: API.ArticleVO) => {
     return
   }
   router.push(`/article/${record.taskId}`)
+}
+
+// 继续待确认的文章
+const continueArticle = (record: API.ArticleVO) => {
+  if (!record.taskId) {
+    message.error('文章任务不存在')
+    return
+  }
+
+  router.push({
+    path: '/create',
+    query: {
+      taskId: record.taskId,
+      mode: 'resume'
+    }
+  })
 }
 
 // 导出文章
@@ -369,17 +413,6 @@ const goToCreate = () => {
 // 格式化日期
 const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm')
-}
-
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const textMap: Record<string, string> = {
-    PENDING: '等待中',
-    PROCESSING: '生成中',
-    COMPLETED: '已完成',
-    FAILED: '失败',
-  }
-  return textMap[status] || status
 }
 
 onMounted(() => {

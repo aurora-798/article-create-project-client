@@ -11,6 +11,14 @@
           </a-button>
           <div class="right-actions">
             <a-button
+                v-if="canContinueArticle(article)"
+                type="primary"
+                @click="continueArticle"
+                class="retry-btn"
+            >
+              继续创作
+            </a-button>
+            <a-button
                 v-if="article?.status === 'FAILED'"
                 type="primary"
                 danger
@@ -40,23 +48,72 @@
 
     <div class="container">
       <a-spin :spinning="loading" tip="加载中...">
-        <a-card :bordered="false" v-if="article" class="article-card">
-          <!-- 标题 -->
-          <div class="title-section">
-            <h1 class="main-title">{{ article.mainTitle }}</h1>
-            <p class="sub-title">{{ article.subTitle }}</p>
-            <div class="meta-info">
-              <span :class="['moyu-status-badge', getStatusClass(article.status ?? '')]">
-                {{ getStatusText(article.status ?? '') }}
-              </span>
-              <span class="time">创建于 {{ article.createTime ? formatDate(article.createTime) : '' }}</span>
+        <div v-if="article" class="article-detail-layout">
+          <!-- 大纲 -->
+          <aside v-if="article.outline && article.outline.length > 0" class="outline-section">
+            <h2 class="section-title">
+              <OrderedListOutlined class="section-icon" />
+              文章大纲
+            </h2>
+            <div class="outline-list">
+              <div v-for="item in article.outline" :key="item.section" class="outline-item">
+                <div class="outline-title">{{ item.section }}. {{ item.title }}</div>
+                <ul class="outline-points">
+                  <li v-for="(point, idx) in item.points" :key="idx">{{ point }}</li>
+                </ul>
+              </div>
             </div>
-          </div>
+          </aside>
 
-          <a-divider />
+          <a-card :bordered="false" class="article-card">
+            <!-- 标题 -->
+            <div class="title-section">
+              <h1 class="main-title">{{ article.mainTitle }}</h1>
+              <p class="sub-title">{{ article.subTitle }}</p>
+              <div class="meta-info">
+                <span :class="['moyu-status-badge', getArticleDisplayStatus(article).className]">
+                  {{ getArticleDisplayStatus(article).text }}
+                </span>
+                <span class="time">创建于 {{ article.createTime ? formatDate(article.createTime) : '' }}</span>
+              </div>
+            </div>
+
+            <a-divider />
+
+            <!-- 完整图文（优先展示） -->
+            <div v-if="article.fullContent" class="content-section">
+              <div v-html="markdownToHtml(article.fullContent)" class="markdown-content"></div>
+            </div>
+
+            <!-- 普通正文（无 fullContent 时展示） -->
+            <div v-else-if="article.content" class="content-section">
+              <h2 class="section-title">
+                <FileTextOutlined class="section-icon" />
+                文章正文
+              </h2>
+              <div v-html="markdownToHtml(article.content)" class="markdown-content"></div>
+            </div>
+
+            <!-- 配图（仅在没有 fullContent 时单独展示） -->
+            <div v-if="!article.fullContent && article.images && article.images.length > 0" class="images-section">
+              <h2 class="section-title">
+                <PictureOutlined class="section-icon" />
+                文章配图
+              </h2>
+              <div class="images-grid">
+                <div v-for="image in article.images" :key="image.position" class="image-item">
+                  <img :src="image.url" :alt="image.description" />
+                  <div class="image-info">
+                    <span class="badge">{{ image.method }}</span>
+                    <span class="keywords">{{ image.keywords }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a-card>
 
           <!-- 执行日志面板 -->
-          <div v-if="executionStats && executionStats.logs && executionStats.logs.length > 0" class="execution-logs-section">
+          <aside v-if="executionStats && executionStats.logs && executionStats.logs.length > 0" class="execution-logs-section">
             <div class="logs-header" @click="showExecutionLogs = !showExecutionLogs">
               <h2 class="section-title">
                 <ClockCircleOutlined class="section-icon" />
@@ -116,63 +173,8 @@
                 </div>
               </div>
             </Transition>
-          </div>
-
-          <a-divider v-if="executionStats && executionStats.logs && executionStats.logs.length > 0" />
-
-          <!-- 大纲 -->
-          <div v-if="article.outline && article.outline.length > 0" class="outline-section">
-            <h2 class="section-title">
-              <OrderedListOutlined class="section-icon" />
-              文章大纲
-            </h2>
-            <div class="outline-list">
-              <div v-for="item in article.outline" :key="item.section" class="outline-item">
-                <div class="outline-title">{{ item.section }}. {{ item.title }}</div>
-                <ul class="outline-points">
-                  <li v-for="(point, idx) in item.points" :key="idx">{{ point }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <a-divider v-if="article.outline && article.outline.length > 0" />
-
-          <!-- 完整图文（优先展示） -->
-          <div v-if="article.fullContent" class="content-section">
-            <h2 class="section-title">
-              <FileTextOutlined class="section-icon" />
-              完整图文
-            </h2>
-            <div v-html="markdownToHtml(article.fullContent)" class="markdown-content"></div>
-          </div>
-
-          <!-- 普通正文（无 fullContent 时展示） -->
-          <div v-else-if="article.content" class="content-section">
-            <h2 class="section-title">
-              <FileTextOutlined class="section-icon" />
-              文章正文
-            </h2>
-            <div v-html="markdownToHtml(article.content)" class="markdown-content"></div>
-          </div>
-
-          <!-- 配图（仅在没有 fullContent 时单独展示） -->
-          <div v-if="!article.fullContent && article.images && article.images.length > 0" class="images-section">
-            <h2 class="section-title">
-              <PictureOutlined class="section-icon" />
-              文章配图
-            </h2>
-            <div class="images-grid">
-              <div v-for="image in article.images" :key="image.position" class="image-item">
-                <img :src="image.url" :alt="image.description" />
-                <div class="image-info">
-                  <span class="badge">{{ image.method }}</span>
-                  <span class="keywords">{{ image.keywords }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </a-card>
+          </aside>
+        </div>
       </a-spin>
     </div>
   </div>
@@ -198,6 +200,7 @@ import {
 import { getArticle, getExecutionLogs, recreateArticle } from '@/api/articleController'
 import { marked } from 'marked'
 import dayjs from 'dayjs'
+import { canContinueArticle, getArticleDisplayStatus } from '@/utils/articleStatus'
 
 const router = useRouter()
 const route = useRoute()
@@ -311,17 +314,6 @@ const getStatusClass = (status: string) => {
   return classMap[status] || 'moyu-status-default'
 }
 
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const textMap: Record<string, string> = {
-    PENDING: '等待中',
-    PROCESSING: '生成中',
-    COMPLETED: '已完成',
-    FAILED: '失败',
-  }
-  return textMap[status] || status
-}
-
 // 获取智能体显示名称
 const getAgentDisplayName = (agentName: string) => {
   const nameMap: Record<string, string> = {
@@ -334,6 +326,22 @@ const getAgentDisplayName = (agentName: string) => {
     'ai_modify_outline': 'AI修改大纲'
   }
   return nameMap[agentName] || agentName
+}
+
+// 继续待确认的文章
+const continueArticle = () => {
+  if (!article.value?.taskId) {
+    message.error('文章任务不存在')
+    return
+  }
+
+  router.push({
+    path: '/create',
+    query: {
+      taskId: article.value.taskId,
+      mode: 'resume'
+    }
+  })
 }
 
 // 重试（重新创建文章）
@@ -457,24 +465,40 @@ onMounted(() => {
   }
 
   .container {
-    max-width: var(--content-max-width);
+    max-width: 1440px;
     margin: 0 auto;
     padding: 0 var(--page-padding);
   }
 
+  .article-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(260px, 320px);
+    grid-template-areas: "outline article logs";
+    align-items: start;
+    gap: 24px;
+  }
+
   .article-card {
+    grid-area: article;
+    min-width: 0;
     border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-lg);
-    background: var(--color-surface);
+    border: 1px solid rgba(214, 211, 209, 0.86);
+    box-shadow: 0 16px 36px rgba(28, 25, 23, 0.08);
+    background: #ffffff;
+    overflow: hidden;
 
     :deep(.ant-card-body) {
-      padding: 40px;
+      padding: 32px;
+    }
+
+    :deep(.ant-divider) {
+      margin: 24px 0;
+      border-color: rgba(120, 113, 108, 0.18);
     }
   }
 
   .title-section {
-    margin-bottom: 28px;
+    margin-bottom: 0;
     text-align: center;
 
     .main-title {
@@ -528,19 +552,26 @@ onMounted(() => {
     margin-left: 8px;
   }
 
+  .outline-section,
+  .execution-logs-section {
+    border: 1px solid rgba(214, 211, 209, 0.86);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 16px 36px rgba(28, 25, 23, 0.08);
+  }
+
   /* 执行日志部分 */
   .execution-logs-section {
-    margin-bottom: 28px;
-    background: var(--color-background-secondary);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
+    grid-area: logs;
+    min-width: 0;
+    background: #ffffff;
     overflow: hidden;
 
     .logs-header {
-      padding: 16px 20px;
+      padding: 14px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       cursor: pointer;
       transition: background var(--transition-fast);
 
@@ -552,6 +583,7 @@ onMounted(() => {
         margin: 0;
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .toggle-icon {
@@ -566,15 +598,15 @@ onMounted(() => {
     }
 
     .logs-content {
-      padding: 0 20px 20px;
+      padding: 0 16px 16px;
     }
 
     .stats-summary {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-      padding: 16px;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px;
       background: white;
       border-radius: var(--radius-md);
       border: 1px solid var(--color-border-light);
@@ -591,7 +623,7 @@ onMounted(() => {
 
         .value {
           display: block;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--color-primary);
         }
@@ -668,6 +700,8 @@ onMounted(() => {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
             margin-bottom: 4px;
 
             .agent-name {
@@ -729,13 +763,16 @@ onMounted(() => {
   }
 
   .outline-section {
-    margin-bottom: 28px;
+    grid-area: outline;
+    min-width: 0;
+    padding: 20px;
+    background: #ffffff;
 
     .outline-list {
       .outline-item {
         margin-bottom: 12px;
         padding: 16px;
-        background: var(--color-background-secondary);
+        background: rgba(255, 255, 255, 0.78);
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border-light);
         transition: all var(--transition-fast);
@@ -767,7 +804,8 @@ onMounted(() => {
   }
 
   .content-section {
-    margin-bottom: 28px;
+    margin-bottom: 0;
+    min-width: 0;
 
     .markdown-content {
       line-height: 1.8;
@@ -827,6 +865,8 @@ onMounted(() => {
   }
 
   .images-section {
+    min-width: 0;
+
     .images-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -876,6 +916,24 @@ onMounted(() => {
   }
 }
 
+@media (max-width: 1100px) {
+  .article-detail-page {
+    .article-detail-layout {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "outline"
+        "article"
+        "logs";
+    }
+
+    .execution-logs-section {
+      .stats-summary {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .article-detail-page {
     .article-card {
@@ -891,6 +949,12 @@ onMounted(() => {
 
       .sub-title {
         font-size: 14px;
+      }
+    }
+
+    .execution-logs-section {
+      .stats-summary {
+        grid-template-columns: 1fr;
       }
     }
   }
