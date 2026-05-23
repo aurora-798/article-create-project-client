@@ -49,6 +49,7 @@
 
       </aside>
 
+      <div class="create-body">
       <!-- 中央：创作画布 -->
       <main ref="mainContentRef" class="main-content">
         <!-- 阶段切换（带过渡动画） -->
@@ -532,6 +533,7 @@
           </a>
         </div>
       </aside>
+      </div>
     </div>
 
     <!-- 错误提示 -->
@@ -1287,20 +1289,28 @@ onBeforeUnmount(() => {
 }
 
 .create-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-areas:
-    "flow flow"
-    "canvas dock";
+  display: flex;
+  flex-direction: column;
   gap: 22px;
   max-width: 1360px;
   margin: 0 auto;
   height: auto;
 }
 
-/* 顶部流程带 */
+.create-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: start;
+}
+
+/* 顶部流程带（滚动时保持可见） */
 .sidebar-left {
-  grid-area: flow;
+  position: sticky;
+  top: calc(var(--header-height) + 20px);
+  z-index: 15;
+  align-self: start;
+  max-height: calc(100vh - var(--header-height) - 40px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
@@ -1310,7 +1320,8 @@ onBeforeUnmount(() => {
   gap: 22px;
   align-items: center;
   box-shadow: var(--shadow-md);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sidebar-header {
@@ -1457,7 +1468,6 @@ onBeforeUnmount(() => {
 
 /* 主内容区 */
 .main-content {
-  grid-area: canvas;
   min-height: 620px;
   padding: 0;
   overflow: visible;
@@ -1896,7 +1906,6 @@ onBeforeUnmount(() => {
 
 /* 右侧辅助面板 */
 .sidebar-right {
-  grid-area: dock;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
@@ -2417,7 +2426,7 @@ onBeforeUnmount(() => {
 
 /* 响应式 */
 @media (max-width: 1400px) {
-  .create-layout {
+  .create-body {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
 
@@ -2427,12 +2436,14 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1200px) {
-  .create-layout {
+  .create-body {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "flow"
-      "canvas"
-      "dock";
+  }
+
+  .sidebar-left {
+    position: static;
+    max-height: none;
+    overflow: visible;
   }
 
   .sidebar-right {
@@ -2460,9 +2471,8 @@ onBeforeUnmount(() => {
     padding: 26px 24px;
   }
 
-  .create-layout {
+  .create-body {
     grid-template-columns: 1fr;
-    height: auto;
   }
 
   .sidebar-left {

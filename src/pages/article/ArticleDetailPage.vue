@@ -56,12 +56,16 @@
               文章大纲
             </h2>
             <div class="outline-list">
-              <div v-for="item in article.outline" :key="item.section" class="outline-item">
-                <div class="outline-title">{{ item.section }}. {{ item.title }}</div>
-                <ul class="outline-points">
-                  <li v-for="(point, idx) in item.points" :key="idx">{{ point }}</li>
-                </ul>
-              </div>
+              <button
+                  v-for="item in article.outline"
+                  :key="item.section"
+                  type="button"
+                  class="outline-item"
+                  @click="scrollToOutlineSection(item)"
+              >
+                <span class="outline-index">{{ item.section }}</span>
+                <span class="outline-title">{{ item.title }}</span>
+              </button>
             </div>
           </aside>
 
@@ -177,11 +181,24 @@
         </div>
       </a-spin>
     </div>
+
+    <a-button
+        v-show="showBackTop"
+        shape="circle"
+        size="large"
+        class="back-top-btn"
+        aria-label="返回顶部"
+        @click="scrollToTop"
+    >
+      <template #icon>
+        <UpOutlined />
+      </template>
+    </a-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -195,7 +212,8 @@ import {
   CloseCircleOutlined,
   LoadingOutlined,
   RedoOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  UpOutlined
 } from '@ant-design/icons-vue'
 import { getArticle, getExecutionLogs, recreateArticle } from '@/api/articleController'
 import { marked } from 'marked'
@@ -210,10 +228,71 @@ const article = ref<API.ArticleVO | null>(null)
 const executionStats = ref<API.AgentExecutionStats | null>(null)
 const logsLoading = ref(false)
 const showExecutionLogs = ref(false)
+const showBackTop = ref(false)
 
 // Markdown 转 HTML
 const markdownToHtml = (markdown: string) => {
-  return marked(markdown)
+  const html = marked(markdown) as string
+  return addOutlineAnchorsToHtml(html)
+}
+
+const normalizeHeadingText = (text: string) => {
+  return text.replace(/\s+/g, '').replace(/^[\d一二三四五六七八九十]+[.、．]\s*/, '').toLowerCase()
+}
+
+const getOutlineAnchorId = (item: API.OutlineItem) => {
+  return `article-section-${item.section ?? normalizeHeadingText(item.title || '')}`
+}
+
+const addOutlineAnchorsToHtml = (html: string) => {
+  if (!article.value?.outline?.length) {
+    return html
+  }
+
+  const container = document.createElement('div')
+  container.innerHTML = html
+
+  const headings = Array.from(container.querySelectorAll('h2, h3'))
+  const usedHeadings = new Set<Element>()
+
+  article.value.outline.forEach((item, index) => {
+    const title = item.title || ''
+    const normalizedTitle = normalizeHeadingText(title)
+    const matchedHeading = headings.find(heading => {
+      if (usedHeadings.has(heading)) return false
+      const normalizedHeading = normalizeHeadingText(heading.textContent || '')
+      return normalizedHeading === normalizedTitle || normalizedHeading.includes(normalizedTitle)
+    }) || headings[index]
+
+    if (matchedHeading) {
+      matchedHeading.id = getOutlineAnchorId(item)
+      usedHeadings.add(matchedHeading)
+    }
+  })
+
+  return container.innerHTML
+}
+
+const scrollToOutlineSection = async (item: API.OutlineItem) => {
+  await nextTick()
+  const target = document.getElementById(getOutlineAnchorId(item))
+  if (!target) return
+
+  target.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+const handleWindowScroll = () => {
+  showBackTop.value = window.scrollY > 520
+}
+
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
 }
 
 // 加载文章
@@ -386,6 +465,12 @@ const handleRetry = () => {
 
 onMounted(() => {
   loadArticle()
+  handleWindowScroll()
+  window.addEventListener('scroll', handleWindowScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleWindowScroll)
 })
 </script>
 
@@ -767,39 +852,85 @@ onMounted(() => {
     min-width: 0;
     padding: 20px;
     background: #ffffff;
+    position: sticky;
+    top: 92px;
+    max-height: calc(100vh - 116px);
+    overflow-y: auto;
+    align-self: start;
 
     .outline-list {
       .outline-item {
+        width: 100%;
         margin-bottom: 12px;
         padding: 16px;
         background: rgba(255, 255, 255, 0.78);
         border-radius: var(--radius-md);
         border: 1px solid var(--color-border-light);
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        text-align: left;
+        cursor: pointer;
         transition: all var(--transition-fast);
 
         &:hover {
           border-color: var(--color-border);
+          background: var(--color-background-secondary);
+          transform: translateY(-1px);
+        }
+
+        &:focus-visible {
+          outline: 2px solid rgba(180, 83, 9, 0.28);
+          outline-offset: 2px;
+        }
+
+        .outline-index {
+          flex-shrink: 0;
+          min-width: 22px;
+          height: 22px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--radius-full);
+          background: var(--color-accent-muted);
+          color: var(--color-accent);
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .outline-title {
           font-size: 14px;
           font-weight: 600;
-          margin-bottom: 8px;
           color: var(--color-text);
-        }
-
-        .outline-points {
           margin: 0;
-          padding-left: 18px;
-
-          li {
-            margin-bottom: 4px;
-            color: var(--color-text-secondary);
-            line-height: 1.6;
-            font-size: 13px;
-          }
+          line-height: 1.55;
         }
       }
+    }
+  }
+
+  .back-top-btn {
+    position: fixed;
+    right: 32px;
+    bottom: 36px;
+    z-index: 20;
+    width: 46px;
+    height: 46px;
+    border: 1px solid rgba(214, 211, 209, 0.9);
+    background: #ffffff;
+    color: var(--color-accent);
+    box-shadow: 0 16px 36px rgba(28, 25, 23, 0.14);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast),
+      color var(--transition-fast);
+
+    &:hover,
+    &:focus {
+      color: var(--color-primary);
+      border-color: var(--color-border);
+      transform: translateY(-2px);
+      box-shadow: 0 18px 42px rgba(28, 25, 23, 0.18);
     }
   }
 
@@ -819,6 +950,7 @@ onMounted(() => {
         padding-bottom: 10px;
         border-bottom: 1px solid var(--color-border);
         color: var(--color-text);
+        scroll-margin-top: 96px;
       }
 
       :deep(h3) {
@@ -826,6 +958,7 @@ onMounted(() => {
         font-weight: 600;
         margin: 22px 0 10px;
         color: var(--color-text);
+        scroll-margin-top: 96px;
       }
 
       :deep(p) {
@@ -926,6 +1059,12 @@ onMounted(() => {
         "logs";
     }
 
+    .outline-section {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+
     .execution-logs-section {
       .stats-summary {
         grid-template-columns: repeat(3, 1fr);
@@ -956,6 +1095,11 @@ onMounted(() => {
       .stats-summary {
         grid-template-columns: 1fr;
       }
+    }
+
+    .back-top-btn {
+      right: 20px;
+      bottom: 24px;
     }
   }
 }
